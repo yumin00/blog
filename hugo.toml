@@ -1,4 +1,0 @@
-baseURL = 'http://example.org/'
-languageCode = 'ko-kr'
-title = 'yumin blog'
-theme = 'ananke'

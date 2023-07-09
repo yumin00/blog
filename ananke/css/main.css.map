@@ -1,7 +1,7 @@
 {
 	"version": 3,
 	"file": "main.css",
-	"sourceRoot": "/Users/younghun/Documents/yum/blog",
+	"sourceRoot": "/Users/younghun/Documents/yumin/blog",
 	"sources": [
 		"ananke/css/main.css"
 	],
