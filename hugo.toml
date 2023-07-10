@@ -3,7 +3,7 @@ languageCode = 'ko-kr'
 title = 'yumin blog'
 theme = 'tranquilpeak'
 
-[[menu.main]]:
+[[menu.main]]
 weight = 1
 identifier = "home"
 name = "Home"
