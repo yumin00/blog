@@ -23,10 +23,10 @@ pre = "<i class=\"sidebar-button-icon fas fa-lg fa-tags\" aria-hidden=\"true\"><
 url = "/tags"
 [[menu.main]]
 weight = 4
-identifier = "archives"
-name = "Archives"
+identifier = "posts"
+name = "POSTS"
 pre = "<i class=\"sidebar-button-icon fas fa-lg fa-archive\" aria-hidden=\"true\"></i>"
-url = "/archives"
+url = "/posts"
 [[menu.main]]
 weight = 5
 identifier = "about"
