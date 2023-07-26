@@ -1,4 +1,4 @@
-baseURL = 'http://example.org/'
+baseURL = 'https://yumin00.github.io/blog/'
 languageCode = 'ko-kr'
 title = 'yumin blog'
 theme = 'tranquilpeak'
