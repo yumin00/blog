@@ -1,7 +1,7 @@
 ---
 title: "Hugo Devlog 제작기"
 date: 2023-07-09T18:27:45+09:00
-draft: true
+draft: false
 ---
 
 개발 공부를 하며 학습한 내용을 남기기 위해 Hugo와 Github Page를 통해 Devlog를 만들기로 했다.

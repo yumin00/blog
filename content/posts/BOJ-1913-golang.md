@@ -1,7 +1,7 @@
 ---
 title: "[BOJ] 1913 : 달팽이 (Golang)"
 date: 2023-07-22T20:30:45+09:00
-draft: true
+draft: false
 ---
 
 ## 문제

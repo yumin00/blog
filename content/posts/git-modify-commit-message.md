@@ -1,7 +1,7 @@
 ---
 title: "[Git] Modify Commit Message"
 date: 2023-07-12T20:26:39+09:00
-draft: true
+draft: false
 ---
 
 새로운 글을 포스팅하여 commit을 남기던 중, commit message 를 잘못 작성하였다.
