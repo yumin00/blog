@@ -24,7 +24,7 @@ url = "/tags"
 [[menu.main]]
 weight = 4
 identifier = "posts"
-name = "POSTS"
+name = "Post"
 pre = "<i class=\"sidebar-button-icon fas fa-lg fa-archive\" aria-hidden=\"true\"></i>"
 url = "/posts"
 [[menu.main]]
