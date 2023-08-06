@@ -16,7 +16,7 @@ draft: true
 
 ```go
 func TestXxx(t *testing.T) {
-}
+}w
 ```
 
 명령어 : go test
