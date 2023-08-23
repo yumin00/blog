@@ -1,7 +1,7 @@
 ---
 title: "IPC"
 date: 2023-08-23T13:08:43+09:00
-draft: true
+draft: false
 ---
 
 # IPC
