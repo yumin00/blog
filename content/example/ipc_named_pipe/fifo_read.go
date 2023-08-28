@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"syscall"
 )
 
@@ -16,7 +17,12 @@ const fifoName = "./myfifo"
 
 func main() {
 	makeFile()
-	writeFileProcess()
+	cmd := exec.Command("./main")
+	_, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("Error executing myfifo: %v\n", err)
+		return
+	}
 	readFileProcess()
 }
 
@@ -45,19 +51,4 @@ func readFileProcess() {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-}
-
-func writeFileProcess() {
-	f, err := os.OpenFile(fifoName, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	_, err = f.WriteString("Hello from named pipe!")
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Message written to named pipe!")
 }
