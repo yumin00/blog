@@ -1,7 +1,7 @@
 ---
 title: "SSL TLS"
 date: 2023-08-31T17:31:12+09:00
-draft: true
+draft: false
 ---
 
 gRPC 공부를 하던 중, SSL과 TLS 개념이 나와 공부를 해보고자 한다.
