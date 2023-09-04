@@ -1,0 +1,232 @@
+baseurl: https://yumin00.github.io/blog/
+languageCode: en-us
+theme: stack
+#paginate: 7
+title: Yumin's Devlog
+
+module:
+  hugoVersion:
+    extended: true
+    min: "0.87.0"
+
+params:
+  mainSections:
+    - post
+  featuredImageField: image
+  rssFullContent: true
+  favicon:
+
+  footer:
+    since:
+    customText:
+
+  dateFormat:
+    published: Jan 02, 2006
+    lastUpdated: Jan 02, 2006 15:04 MST
+
+  sidebar:
+    compact: false
+    emoji: 🐶
+    subtitle: Backend Developer / Go
+    avatar:
+      enabled: true
+      local: true
+      src: img/profile.png
+
+  article:
+    math: false
+    toc: true
+    readingTime: true
+    license:
+      enabled: false
+      default: Licensed under CC BY-NC-SA 4.0
+
+  comments:
+    enabled: false
+    provider: disqus
+
+    disqusjs:
+      shortname:
+      apiUrl:
+      apiKey:
+      admin:
+      adminLabel:
+
+    utterances:
+      repo:
+      issueTerm: pathname
+      label:
+
+    remark42:
+      host:
+      site:
+      locale:
+
+    vssue:
+      platform:
+      owner:
+      repo:
+      clientId:
+      clientSecret:
+      autoCreateIssue: false
+
+    # Waline client configuration see: https://waline.js.org/en/reference/client.html
+    waline:
+      serverURL:
+      lang:
+      visitor:
+      avatar:
+      emoji:
+        - https://cdn.jsdelivr.net/gh/walinejs/emojis/weibo
+      requiredMeta:
+        - nick
+        - mail
+      placeholder:
+      locale:
+        admin: Admin
+
+    twikoo:
+      envId:
+      region:
+      path:
+      lang:
+
+    giscus:
+      repo:
+      repoID:
+      category:
+      categoryID:
+      mapping:
+      strict:
+      lightTheme:
+      darkTheme:
+      reactionsEnabled: 1
+      emitMetadata: 0
+      inputPosition:
+      lang:
+
+    gitalk:
+      owner:
+      admin:
+      repo:
+      clientID:
+      clientSecret:
+
+    cusdis:
+      host:
+      id:
+
+  widgets:
+    homepage:
+      - type: search
+      - type: categories
+        params:
+          limit: 10
+      - type: archives
+        params:
+          limit: 5
+    page:
+      - type: toc
+
+  opengraph:
+    twitter:
+      # Your Twitter username
+      site:
+
+      # Available values: summary, summary_large_image
+      card: summary_large_image
+
+  defaultImage:
+    opengraph:
+      enabled: false
+      local: false
+      src:
+
+  colorScheme:
+    # Display toggle
+    toggle: true
+
+    # Available values: auto, light, dark
+    default: auto
+
+  imageProcessing:
+    cover:
+      enabled: true
+    content:
+      enabled: true
+
+
+menu:
+  main:
+    - identifier: Home
+      name: Home
+      url: /
+      weight: -100
+      params:
+        icon: home
+        newTab: true
+
+    - identifier: About
+      name: About
+      url: /
+      weight: -100
+      params:
+        icon: user
+        newTab: true
+
+    - identifier: Archives
+      name: Archives
+      url: /
+      weight: -100
+      params:
+        icon: archives
+        newTab: true
+
+    - identifier: Search
+      name: Search
+      url: /
+      weight: -100
+      params:
+        icon: search
+        newTab: true
+
+    - identifier: Github
+      name: Github
+      url: /
+      weight: -100
+      params:
+        icon: brand-github
+        newTab: true
+
+related:
+  includeNewer: true
+  threshold: 60
+  toLower: false
+  indices:
+    - name: tags
+      weight: 100
+
+    - name: categories
+      weight: 200
+
+markup:
+  goldmark:
+    renderer:
+      ## Set to true if you have HTML content inside Markdown
+      unsafe: true
+  tableOfContents:
+    endLevel: 4
+    ordered: true
+    startLevel: 2
+  highlight:
+    noClasses: false
+    codeFences: true
+    guessSyntax: true
+    lineNoStart: 1
+    lineNos: true
+    lineNumbersInTable: true
+    tabWidth: 4
+
+permalinks:
+  post: /p/:slug/
+  page: /:slug/

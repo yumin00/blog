@@ -2,7 +2,10 @@
 title: "IP"
 date: 2023-08-10T22:56:15+09:00
 draft: false
+categories:
+- Network
 ---
+
 
 # IP
 ## 1. IP
