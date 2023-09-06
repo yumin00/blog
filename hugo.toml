@@ -1,4 +1,0 @@
-baseURL = 'https://yumin00.github.io/blog/'
-languageCode = 'en-us'
-title = "Yumin's Devlog"
-theme = 'stack'
