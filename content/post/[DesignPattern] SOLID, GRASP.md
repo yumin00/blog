@@ -1,7 +1,7 @@
 ---
 title: "[Design Pattern] SOLID, GRASP 원칙"
 date: 2023-09-06T13:00:16+09:00
-draft: true
+draft: false
 
 categories :
 - Architecture
