@@ -1,6 +1,6 @@
 ---
-title: "Algorithm"
-description: "알고리즘 문제 풀기"
+title: "Architecture"
+description: "아키텍처에 대한 공부"
 slug: "Network"
 style:
 background: "#2a9d8f"
