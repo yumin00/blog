@@ -1,5 +1,5 @@
 ---
-title: "[BOJ] 1260 DFS와 BFS Golang 문제 풀이
+title: "[BOJ] 1260 DFS와 BFS Golang 문제 풀이"
 date: 2023-09-11T19:11:36+09:00
 draft: false
 categories :
