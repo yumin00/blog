@@ -1,7 +1,7 @@
 ---
 title: "OSI 7계층이란?"
 date: 2023-09-14T22:50:09+09:00
-draft: true
+draft: false
 categories :
 - Network
 ---
