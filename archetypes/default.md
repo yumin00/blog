@@ -6,4 +6,5 @@ categories :
 - Network
 - Architecture
 - Algorithm
+- DataStructure
 ---
