@@ -7,4 +7,7 @@ categories :
 - Architecture
 - Algorithm
 - DataStructure
+- GoLang
+- OS
+- Programming
 ---
