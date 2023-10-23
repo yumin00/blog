@@ -10,4 +10,5 @@ categories :
 - GoLang
 - OS
 - Programming
+- ComputerStructure
 ---

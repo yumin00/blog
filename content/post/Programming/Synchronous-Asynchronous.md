@@ -1,7 +1,7 @@
 ---
 title: "동기와 비동기에 대해 알아보자"
 date: 2023-10-21T21:06:33+09:00
-draft: true
+draft: false
 categories :
 - Programming
 ---
