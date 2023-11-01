@@ -1,7 +1,7 @@
 ---
 title: "쿠키와 세션에 대해서"
 date: 2023-09-19T23:34:03+09:00
-draft: false
+draft: true
 categories :
 - Network
 ---
@@ -139,3 +139,14 @@ ttpOnly인데요. Set-Cookie 응답 헤더에 이 속성이 명시된 쿠키는 
 세션은 다른 탭을 사용하면 세션 ID가 공유되지만, 다른 브라우저를 사용하연 세션 ID는 공유되지 않는다.
 
 세션은 서버의 자원을 사용하기 때문에 무분별하게 만들면 메모리가 감당할 수 없게 될 수 있고 속도가 느려질 수 있기 때문에 쿠키가 유리할 수 있다.
+
+## 5. JWT (JSON Wet Token)
+> Authentication vs Authorization
+> 
+> Authentication : [인증] / 내가 누구인지 증명해주는 것
+> 
+> Authorization : [인가] / 너구나. 통과다!
+
+토큰은 string으로, 쿠키와 세션처럼 서버로부터 받아서 요청할 때마다 같이 보내줘야 한다.
+
+- stateless
