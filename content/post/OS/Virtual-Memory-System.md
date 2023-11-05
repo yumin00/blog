@@ -1,7 +1,7 @@
 ---
 title: "가상메모리(Virtual Memory System)에 대해 알아보자"
 date: 2023-10-08T16:02:08+09:00
-draft: true
+draft: false
 categories :
 - OS
 ---
