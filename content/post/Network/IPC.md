@@ -93,10 +93,14 @@ direct이든 아니든, 임시의 queue 안의 프로세스들이 통신하여 m
     hello_world.c
     ```
   
+pipe - golang 구현은 [여기](https://github.com/yumin00/IPC/blob/main/pipe/pipe.go)에서 확인할 수 있다.
+
 ### (2) FIFO(named pipe)
 - 파일을 이용해 메시지 전하는 IPC 방법
 - PIPE와 다르게 부모가 다른 프로세스 간에도 IPC 통신 가능
-- 파일을 통해 fd를 얻기 때문에 부모를 공유해야 한다는 제약이 없
+- 파일을 통해 fd를 얻기 때문에 부모를 공유해야 한다는 제약이 없다.
+
+fifo - golang 구현은 [여기](https://github.com/yumin00/IPC/blob/main/main.go)에서 확인할 수 있다.
 
 ### (3) 메세지 큐
 - 메시지큐 자료구조는 커널에서 관리하기 때문에 프로세스 간 통신이 가능하다.
