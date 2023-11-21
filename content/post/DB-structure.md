@@ -4,13 +4,6 @@ date: 2023-11-18T23:53:18+09:00
 draft: true
 categories :
 - Network
-- Architecture
-- Algorithm
-- DataStructure
-- GoLang
-- OS
-- Programming
-- ComputerStructure
 ---
 
 # Auth를 위한 DB 구조
@@ -26,7 +19,8 @@ categories :
 
 JWT 암호화 알고리즘에는 대칭과 비대칭 방식으로 나눌 수 있는데, 대칭키 방식의 HS256 알고리즘을 사용하기로 했다.
 
-[authX flow]
+[authZ flow]
+인증 flow는 다음과 같다.
 
 ## authE
 인증에서 JWT의 Signature를 이용했다면, 인가에서는 Payload를 이용하기로 했다.
