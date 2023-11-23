@@ -42,6 +42,10 @@ payload에서 aud를 통해 회원/비회원 여부를 판단하고자 한다.
   - 클라이언트는 리프레시 토큰/액세스 토큰을 사용하여 API를 요청하고, 서버는 토큰의 유효성을 검증한 뒤 유효할 경우 response를 준다.
   - 액세스 토큰이 만료됐을 경우(Unauthorized), 리프레시 토큰을 유효성을 확인하여 액세스 토큰을 재발급해준다.
 
+해당 플로우를 위해 auth를 위한 user db는 다음과 같이 구성해보았다.
+
+<img width="214" alt="image" src="https://github.com/yumin00/blog/assets/130362583/e981792a-170a-4131-903d-5b6a916d86c4">
+
 ### 액세스 토큰
 - stateless
 
