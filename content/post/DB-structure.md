@@ -44,7 +44,7 @@ payload에서 aud를 통해 회원/비회원 여부를 판단하고자 한다.
 
 해당 플로우를 위해 auth를 위한 user db는 다음과 같이 구성해보았다.
 
-<img width="214" alt="image" src="https://github.com/yumin00/blog/assets/130362583/e981792a-170a-4131-903d-5b6a916d86c4">
+<img width="500" alt="image" src="https://github.com/yumin00/blog/assets/130362583/2fbd530a-a862-4656-8e70-5d44d7979b75">
 
 ### 액세스 토큰
 - stateless
