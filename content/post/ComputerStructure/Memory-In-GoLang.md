@@ -51,28 +51,79 @@ Go 컴파일러는 이스케이프 분석이라는 기술을 사용하여 스택
 
 이스케이프 분석이란, 객체의 포인터가 서브 루틴 밖으로 전파되는지를 분석하는 기술이다.
 
+### TEST
+이스케이프 분석을 통해 직접 Go에서 스택, 힙을 어떻게 할당하는지에 대해 테스트를 해보았다.
+
 ```go
+package escape
+
+import "fmt"
+
+func main() {
+	x := 1
+	fmt.Println(x)
+}
+
+```
+
+해당 코드를 `go build -gcflags ‘-m’` 같이 옵션을 지정하여 build 하면 이스케이프 분석 결과를 확인할 수 있다. 이스케이프 분석 결과는 다음과 같다.
+
+```
+./main.go:7:13: inlining call to fmt.Println
+./main.go:7:13: ... argument does not escape
+./main.go:7:14: x escapes to heap
+```
+여기에서 escaping이란, 변수가 스택 메모리 영역을 벗어나 힙 메모리에 할당됨을 의미한다.
+
+해당 코드에서 x는 main 함수에서 사용되고 있고, 전역변수가 아니기 때문에 스택에 할당될 것이라고 생각했다.
+
+x는 fmt.Println 라는 함수의 인수로 전달되고, 그 인수가 탈출하기 때문에 x도 탈출한다는 것을 알 수 있다.
+
+```go
+package escape
+
+import "fmt"
+
 type user struct {
 	name string
 }
 
-func stayOnStack() user {
-	// 스택에 할당됨
-	u := user{
-		name: "Gump",
-	}
-
-	return u
+func main() {
+	v := "hi yumin"
+	var a = v
+	test(a)
+	testPointer()
+	fmt.Print(v, a)
 }
 
-func escapeToHeap() *user {
-	// 힙에 할당됨
-	u := user{
-		name: "Gump",
-	}
-
-	// 이스케이프 분석을 통해 포인터가 리턴됨을 인지하고 객체를 스택이 아닌 힙에 할당함
-	return &u
+func test(input string) {
+	var temp string
+	temp = input
+	fmt.Print(temp)
 }
 
+func testPointer() {
+	temp := &user{"yumin"}
+	fmt.Println(temp)
+}
 ```
+
+```shell
+./main.go:20:11: inlining call to fmt.Print
+./main.go:25:13: inlining call to fmt.Println
+./main.go:14:11: inlining call to fmt.Print
+./main.go:17:11: leaking param: input
+./main.go:20:11: ... argument does not escape
+./main.go:20:12: temp escapes to heap
+./main.go:24:10: &user{...} escapes to heap
+./main.go:25:13: ... argument does not escape
+./main.go:14:11: ... argument does not escape
+./main.go:14:12: v escapes to heap
+./main.go:14:15: a escapes to heap
+```
+
+- leaking param: input: 함수 test의 매개변수 input이 함수 범위 밖으로 "누출"(escaping)한다는 것을 의미한다. 여기서는 temp에 할당되고 fmt.Print로 전달되기 때문이다.
+- temp escapes to heap: temp 변수가 힙에 할당되는 것을 의미한다. 이는 fmt.Print 호출에서 변수가 사용되기 때문이다.
+- &user{...} escapes to heap: user 구조체의 포인터가 힙에 할다된다. 이는 구조체 포인터가 함수 범위를 벗어나서 사용되기 때문이다.
+- ... argument does not escape : 여기서 ...는 fmt.Print 및 fmt.Println 함수에 전달되는 인자들이 함수 범위 밖으로 누출되지 않음을 나타낸다.
+- v/a escapes to heap: v와 a 변수가 힙에 할당된다. 이는 이 변수들이 fmt.Print 호출에 사용되기 때문이다.
