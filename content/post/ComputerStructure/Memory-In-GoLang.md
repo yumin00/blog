@@ -268,6 +268,105 @@ func forReturn([]byte) {
 - sliceA는 forReturn() 으로 전달되지만, 수명이 정혀재있고 하위함수로 전달되기 때문에 스택에 할당된다.
 - sliceB는 참조형으로, 상위함수에 전달되기 때문에 힙에 할당된다.
 
+```go
+package main
+
+func main() {
+	test()
+}
+
+func test() map[string]string {
+	user := map[string]string{
+		"name": "yumin",
+	}
+	return user
+}
+```
+```
+./main.go:7:6: can inline test
+./main.go:3:6: can inline main
+./main.go:4:6: inlining call to test
+./main.go:4:6: map[string]string{...} does not escape
+./main.go:8:27: map[string]string{...} escapes to heap
+```
+
+- map으로 할당할 경우, 크기가 정해지지 않기 때문에 map으로 할당된 변수가 return될 경우 힙에 할당된다.
+
+```go
+package main
+
+func main() {
+	test()
+}
+
+func test() string {
+	user := map[string]string{
+		"name": "yumin",
+	}
+	return user["name"]
+}
+
+```
+
+````
+./main.go:7:6: can inline test
+./main.go:3:6: can inline main
+./main.go:4:6: inlining call to test
+./main.go:4:6: map[string]string{...} does not escape
+./main.go:8:27: map[string]string{...} does not escape
+````
+
+- 하지만 map으로 할당될지라도(동적으로 할당되어 크기가 정해지지 않았더라도), 해당 변수가 직접 return 되지 않고 정적 변수가 return된다면 힙에 할당되지 않는다.
+
+[channel]
+```go
+package main
+
+func main() {
+	resultChan := makeChannel()
+
+	go calculateSum(5, 10, resultChan)
+
+	result := <-resultChan
+	forReturn(resultChan)
+	forReturnInt(result)
+
+}
+
+func makeChannel() chan int {
+	resultChan := make(chan int)
+	return resultChan
+}
+
+func calculateSum(a, b int, resultChan chan<- int) {
+	sum := a + b
+	resultChan <- sum
+}
+
+func forReturn(resultChan <-chan int) <-chan int {
+	return resultChan
+}
+
+func forReturnInt(int) {
+	return
+}
+
+```
+
+```
+./main.go:14:6: can inline makeChannel
+./main.go:19:6: can inline calculateSum
+./main.go:24:6: can inline forReturn
+./main.go:28:6: can inline forReturnInt
+./main.go:4:27: inlining call to makeChannel
+./main.go:9:11: inlining call to forReturn
+./main.go:10:14: inlining call to forReturnInt
+./main.go:19:29: resultChan does not escape
+./main.go:24:16: leaking param: resultChan to result ~r0 level=0
+```
+
+- channel을 사용했을 경우, 모두 스택에 할당됨을 확인할 수 있다.
+
 append 메모리 할당은 어떻게? / 익명함수일때는? (http://golang.site/go/article/11-Go-%ED%81%B4%EB%A1%9C%EC%A0%80) / 고루틴일때는? / 메서드일 때는? / 인터페이스일 떄는? / channel 공부 / map, slice
 
 내가 짠 코드 or 쓰고 있는 아키텍처에는 어떻게 하는지? - 클린 아키텍처에서 메모리 관리를 어떻게 하는지?
