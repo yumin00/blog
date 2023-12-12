@@ -70,6 +70,7 @@ Go언어는 정적 타입 언어로 자료형을 지정해서 코드를 작성�
 - escapes to heap: 힙에 할당됨
 - moved to heap: 스택에 할당했다가 힙으로 옮기는 것을 의미한다.
 
+#### [struct & 포인터]
 ```go
 package main
 
@@ -132,6 +133,8 @@ func test() *user {
 ```
 
 - `moved to heap: u`: test()에서 u는 user로 스택에 할당됐지만, u가 포인터형으로 반환되기 때문에 힙으로 이동된 것을 알 수 있다. Go 컴파일러는 기본적으로 가능한 한 변수를 스택에 할당하려고 시도하기 때문에 처음에 스택에 할당되는 것을 알 수 있다.
+
+#### [moved to heap]
 
 ```go
 package main
@@ -196,6 +199,8 @@ func foo(p *int) *int {
 - `x := 10` 에서 x는 스택에 할당된다.
 - `moved to heap: x`: 하지만 p가 x의 참조형을 사용하여 반환되기 때문에 x는 힙으로 옮겨지는 것을 확인할 수 있다.
 
+
+#### [slice]
 ```go
 package main
 
@@ -266,7 +271,33 @@ func forReturn([]byte) {
 ```
 
 - sliceA는 forReturn() 으로 전달되지만, 수명이 정혀재있고 하위함수로 전달되기 때문에 스택에 할당된다.
-- sliceB는 참조형으로, 상위함수에 전달되기 때문에 힙에 할당된다.
+- sliceB는 make로 선언된 참조형으로 상위함수에 전달되기 때문에 힙에 할당된다.
+
+```go
+package main
+
+func main() {
+	_ = test()
+}
+
+func test() []int {
+	a := []int{1, 2, 3}
+	return a
+}
+```
+```
+./main.go:7:6: can inline test
+./main.go:3:6: can inline main
+./main.go:4:10: inlining call to test
+./main.go:4:10: []int{...} does not escape
+./main.go:8:12: []int{...} escapes to heap
+```
+
+- array는 기본적으로 메모리 크기가 정해져있지 않기 때문에, 상위함수로 전달될 경우 힙에 할당된다.
+
+
+
+#### [map]
 
 ```go
 package main
@@ -290,7 +321,7 @@ func test() map[string]string {
 ./main.go:8:27: map[string]string{...} escapes to heap
 ```
 
-- map으로 할당할 경우, 크기가 정해지지 않기 때문에 map으로 할당된 변수가 return될 경우 힙에 할당된다.
+- map(참조 타입)으로 할당할 경우, 크기가 정해지지 않기 때문에 map으로 할당된 변수가 return될 경우 힙에 할당된다.
 
 ```go
 package main
@@ -317,6 +348,9 @@ func test() string {
 ````
 
 - 하지만 map으로 할당될지라도(동적으로 할당되어 크기가 정해지지 않았더라도), 해당 변수가 직접 return 되지 않고 정적 변수가 return된다면 힙에 할당되지 않는다.
+
+#### [slice]
+
 
 [channel]
 ```go
@@ -365,9 +399,92 @@ func forReturnInt(int) {
 ./main.go:24:16: leaking param: resultChan to result ~r0 level=0
 ```
 
+```go
+package main
+
+import (
+	"time"
+)
+
+func main() {
+	dataChan := make(chan int)
+
+	go sendData(dataChan)
+
+	for i := 1; i <= 5; i++ {
+		data := <-dataChan
+		forReturn(data)
+	}
+
+	close(dataChan)
+}
+
+func sendData(ch chan int) {
+	for i := 1; i <= 5; i++ {
+		ch <- i
+		time.Sleep(1 * time.Second)
+	}
+
+	close(ch)
+}
+
+func forReturn(int) {
+	return
+}
+```
+
+```
+./main.go:20:6: can inline sendData
+./main.go:29:6: can inline forReturn
+./main.go:14:12: inlining call to forReturn
+./main.go:20:15: ch does not escape
+```
+
+```go
+package main
+
+import (
+	"time"
+)
+
+var DataChan chan int
+
+func main() {
+	go sendData(DataChan)
+
+	for i := 1; i <= 5; i++ {
+		data := <-DataChan
+		forReturn(data)
+	}
+
+	close(DataChan)
+}
+
+func sendData(ch chan int) {
+	for i := 1; i <= 5; i++ {
+		ch <- i
+		time.Sleep(1 * time.Second)
+	}
+
+	close(ch)
+}
+
+func forReturn(int) {
+	return
+}
+```
+
+```
+./main.go:20:6: can inline sendData
+./main.go:29:6: can inline forReturn
+./main.go:14:12: inlining call to forReturn
+./main.go:20:15: ch does not escape
+```
+
 - channel을 사용했을 경우, 모두 스택에 할당됨을 확인할 수 있다.
 
-append 메모리 할당은 어떻게? / 익명함수일때는? (http://golang.site/go/article/11-Go-%ED%81%B4%EB%A1%9C%EC%A0%80) / 고루틴일때는? / 메서드일 때는? / 인터페이스일 떄는? / channel 공부 / map, slice
+
+append 메모리 할당은 어떻게? / 익명함수일때는? (http://golang.site/go/article/11-Go-%ED%81%B4%EB%A1%9C%EC%A0%80) / 고루틴일때는? / 메서드일 때는? / 인터페이스일 떄는? / channel 공부
 
 내가 짠 코드 or 쓰고 있는 아키텍처에는 어떻게 하는지? - 클린 아키텍처에서 메모리 관리를 어떻게 하는지?
 
