@@ -59,7 +59,6 @@ Go언어는 정적 타입 언어로 자료형을 지정해서 코드를 작성�
 - 힙 할당은 무겁다고 한다. 그 이유는 할당 후 가비지 컬렉터가 할당된 객체 참조 여부를 주기적으로 검사하기 때문이다.
 - 스택 할당은 가볍다고 한다. 스택 할당의 경우 CPU 명령어 PUSH/POP 두 개로 끝나기 때문이다.
 
-
 ### TEST
 해당 테스트는 go의 1.21 버전을 기준으로 진행해보았다.
 
@@ -126,9 +125,9 @@ func test() *user {
 ```
 
 ```
-./main.go:12:6: can inline escapeToHeap
+./main.go:12:6: can inline test
 ./main.go:8:6: can inline main
-./main.go:9:18: inlining call to escapeToHeap
+./main.go:9:10: inlining call to test
 ./main.go:13:2: moved to heap: u
 ```
 
@@ -482,12 +481,73 @@ func forReturn(int) {
 ```
 
 - channel을 사용했을 경우, 모두 스택에 할당됨을 확인할 수 있다.
+- channel에 값을 넣어놓고 여러 개의 고루틴이 함께 사용하는 객체인데, 왜 힙이 아니라 스택에 할당될까?
+
+채널이 힙이 아닌 스택에 할당되는 이유에 대해 공부해보기 위해 채널에 대해 자세히 공부해보고자 한다.
+
+# Channel in GoLang
+## Channel의 특징
+### send / receive
+고에서 채널은 여러 개의 고루틴이 동시에 접근하여 여러 데이터를 send할 때 누락되는 데이터가 존재하지 않는다.
+또한, 여러 개의 고루틴이 동시에 접근하여 데이터를 receive할 때 중복으로 receive하는 데이터가 존재하지 않는다.
+
+### block, unblock
+고루틴이 block되기도 unblock되기도 한다.
+
+- 채널 버퍼가 꽉 찬 상태에서 채널에 데이터를 send할 때 block된다.
+- 채널 버퍼가 꽉 찬 상태에서 다른 고루틴이 데이터를 receive하면 데이터를 send하고자 하는 고루틴이 unblock되면서 데이터를 send할 수 있다.
+
+## Channel의 생성
+채널을 생성하고 메모리 할당을 보았을 때, 스택에 할당된다고 했다. 이에 대해 자세히 알기 위해서는 실제로 채널의 구조를 파악해야하 한다.
+
+### hchan struct
+```go
+type hchan struct {
+    qcount   uint           // total data in the queue
+    dataqsiz uint           // size of the circular queue
+    buf      unsafe.Pointer // points to an array of dataqsiz elements
+    elemsize uint16
+    closed   uint32
+    elemtype *_type // element type
+    sendx    uint   // send index
+    recvx    uint   // receive index
+    recvq    waitq  // list of recv waiters
+    sendq    waitq  // list of send waiters
+    
+    // lock protects all fields in hchan, as well as several
+    // fields in sudogs blocked on this channel.
+    //
+    // Do not change another G's status while holding this lock
+    // (in particular, do not ready a G), as this can deadlock
+    // with stack shrinking.
+    lock mutex
+}
+```
+
+```go
+ch := make(chan int, 3)
+```
+
+위와 같이 채널을 생성하면 내부적으로 hchan struct가 만들어진다. hchan 고랭 내부에 정의된 것이다.
 
 
-append 메모리 할당은 어떻게? / 익명함수일때는? (http://golang.site/go/article/11-Go-%ED%81%B4%EB%A1%9C%EC%A0%80) / 고루틴일때는? / 메서드일 때는? / 인터페이스일 떄는? / channel 공부
+훅에서 메시지를 받아서 채널에 던져줌 . 채널에 넣어주고. 값을 꺼내서 핸들러 호출
 
-내가 짠 코드 or 쓰고 있는 아키텍처에는 어떻게 하는지? - 클린 아키텍처에서 메모리 관리를 어떻게 하는지?
+- `qcount`: 큐에 저장된 데이터 총량을 의미한다.(ex. 0, 1, 2, 3)
+- `dataqsiz`: 순환 큐의 크기를 나타낸다. 즉, 채널이 동시에 보유할 수 있는 요소의 최대 개수를 의미힌다. (ex. 3)
+- `buf`: dataqsiz의 요소들의 배열의 포인터이다. 즉, 요소들을 저장하는 순환큐 배열의 포인터이다.
+- `elemsize`: 큐에 저장되는 각 요소의 크기(바이트 단위)를 의미한다.
+- `closed`: 채널이 닫혔는지에 대한 플래그이다. 1이면 채널이 닫혔다는 것을 의미한다.
+- `elemtype`: 큐에 저장되는 요소의 타입을 나타내는 _type의 포인터이다.
+- `sendx` / `recvx`: 채널에서 데이터를 받을 / 줄 배열의 인덱스이다.
+- `recq` / `sendq`: 데이터를 받기를 / 쓰기를 기다리는 고루틴의 리스트이다. waitq 구조체를 사용한다.
+- `lock`: hchan의 모든 필드를 보호하는 역할이다. lock일 경우 다른 고루틴의 상태를 변경하지 않아야 한다.
 
-그렇다면 메모리 관리를 잘 하기 위해서는 어떻게 해야하는가?
 
-스택 힙 장단점 / 이스케이프 분석 특징 설정
+### 메모리 할당
+채널은 스택에 할당된다. 그리고 채널이 생성된 후 그 내부의 hstruct는 힙에 할당된다. 채널은 hstruct의 포인터이다.
+따라서 서로 다른 고루틴에서 쓰고 읽기가 가능한 것이다.
+
+여러 개의 고루틴에서 각자의 스택에 채널을 할당해놓고, 실제로 데이터를 읽고 쓸 때는 값복사를 통해 hstruct가 있는 힙에 접근하여 읽고 쓰는 것이다.
+
+## channel 코드 분석
