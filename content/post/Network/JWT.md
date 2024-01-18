@@ -1,7 +1,7 @@
 ---
 title: "JWT에 대해 알아보자"
 date: 2023-11-07T23:45:39+09:00
-draft: true
+draft: false
 categories :
 - Network
 ---
@@ -43,7 +43,36 @@ JWT의 중요한 점은 서명된 토큰이라는 것이다. 공개/개인 키�
 ### Signature
 시그니처는 서버에 있는 개인키로만 암호화를 풀 수 있으며, 다른 클라이언트는 임의로 복호화할 수 없다.
 
-### 과정
-- JWT 토큰을 클라이언트가 서버로 요청과 동시에 전달한다.
-- 서버가 가지고 있는 개인키를 가지고 signature를 복호화한다.
-- JWT의 header, payload 값과 일치하는지 확인하여 일치한다면 허용한다.
+### JWT
+JWT를 만드는 방법은 다음과 같다.
+
+- base64UrlEncode(Hedaer): json 형식의 Header를 Base64Url로 인코딩
+- base64UrlEncode(Payload): json 형식의 Payload 를 Base64Url로 인코딩
+- signature : <base64UrlEncode(header) + "." + base64UrlEncode(payload), secretKey> 를 header에서 지정한 알고리즘으로 생성
+
+JWT = base64UrlEncode(Hedaer) + "." + base64UrlEncode(Payload) + "." + signature
+
+## JWT는 왜 사용하는걸까?
+### stateful 인증
+- 서버가 사용자의 로그인 상태를 가지고 있어야 한다. 즉, 사용자의 로그인 여부를 DB에 저장해야 한다.
+
+### stateless 인증
+- 서버가 사용자의 로그인 상태를 가지고 있지 않는다.
+- 대신, 각 요청마다 인증 정보를 받아 인증이 된 사용자인지 판단한다.
+
+stateful 인증을 사용하면, 서버는 사용자의 로그인 상태를 DB에 저장해야 한다. 각 요청마다 사용자의 로그인 상태를 DB를 통해 가져와서 인증 여부를 확인해야 한다. 그렇게 되면 성능에 영향을 줄 수 있다.
+
+따라서 stateless 인증을 사용하면 DB를 거칠 필요없이, 성능에 영향을 주지 않고 더 빠르게 요청/응답이 가능해진다. 그래서 JWT가 사용되는 것이다.
+
+하지만, 세션과 달리 클라이언트에 유저의 정보가 포함된 토큰이 저장되는 것이기 때문에 민감한 정보를 담아서는 안된다.  
+
+현재 진행중인 프로젝트에서는 인증 방식을 다음과 같이 다루고 있다.
+1. 사용자가 로그인하면 서버는 refresh token과 access token을 생성한다.
+- refresh token : 랜덤 문자열로 DB에 저장
+- access toekn : JWT
+
+2. API를 호출할 때마다 클라이언트는 header에 access token 을 포함하여 요청하고, 서버는 이를 검증한 뒤 응답을 보낸다.
+3. access token이 만료되면 refresh token을 검증한 뒤, 새로운 access token을 발급한다.
+
+
+다음에는 이러한 JWT 인증을 go 에서 어떻게 구현할지에 대해 이야기해보고자 한다.
