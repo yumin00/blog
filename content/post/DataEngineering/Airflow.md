@@ -1,7 +1,7 @@
 ---
 title: "Airflow 에 대해 알아보자"
 date: 2024-02-27T19:53:19+09:00
-draft: true
+draft: false
 categories :
 - DataEngineering
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Airflow 튜토리얼"
 date: 2024-03-04T20:59:35+09:00
-draft: true
+draft: false
 categories :
 - DataEngineering
 ---
@@ -26,6 +26,7 @@ docker compose up -d
 
 모두 실행되면, `http://localhost:8080/` 를 통해 에어플로우에 접근할 수 있다.
 
+<img width="875" alt="image" src="https://github.com/yumin00/blog/assets/130362583/cb9fce73-a17e-4c33-8011-8b56612a595e">
 로그인 페이지에서는 기본적으로 airflow / airflow 로 로그인이 가능하다.
 
 ### 📝 Hello World DAG 생성
@@ -35,18 +36,23 @@ docker compose up -d
 
 DAG를 생성하기 위해 위에서 생성한 레포에서 `~dags` 폴더에 생성하고자 하는 DAG인 `hello_world.py` 파일을 생성해주었다.
 
-<img width="921" alt="image" src="https://github.com/yumin00/blog/assets/130362583/efe3cbe4-74c6-42bc-9fe7-1e010fd59ea7">
+<img width="756" alt="image" src="https://github.com/yumin00/blog/assets/130362583/62e9f4ac-bbf7-4391-bb00-d048b1d3ceea">
 
 - `with DAG` 를 통해 DAG를 정의할 수 있다. DAG 이름과 start_date, tags 등 기본 값을 설정할 수 있다.
 - `as dag:`를 통해 TASK를 정의할 수 있다. 정의한 테스크는 `PythonOperator`를 통해 "Hello World!"를 출력한다.
 
 해당 DAG는 하나의 테스크이므로 순서를 정의하지 않아도 된다. 만약, 테스크가 여러개라면 `t1 >> t2` 와 같은 형식으로 순서를 정의해야하 한다.
 
-작성한 DAG는 에어플로우 UI를 통헤서도 확인할 수 있다.
+### 🖥️ Web UI를 통한 DAG 확인
+작성한 DAG는 에어플로우 UI를 통해서 확인할 수 있다.
 <img width="1710" alt="image" src="https://github.com/yumin00/blog/assets/130362583/bb3eaa45-06c9-47ad-8993-b9bb9328a4ac">
 
 해당 DAG에 들어가보면 더 자세한 내용을 확인해볼 수 있다.
+
+- Graph : 설정한 TASK를 그래프로 확인할 수 있다.
+
 <img width="408" alt="image" src="https://github.com/yumin00/blog/assets/130362583/3c3c15d6-1e0c-4702-b5e7-c88287c2ac16">
 
-DAG가 성공적으로 실행되면 아래와 같은 표시를 확인할 수 있다.
+- DAG의 실행 결과를 확인할 수 있다.
+
 <img width="305" alt="image" src="https://github.com/yumin00/blog/assets/130362583/b6689df3-a927-4949-88a2-63a9dc406dd8">
