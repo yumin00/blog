@@ -28,7 +28,7 @@ docker compose up -d
 
 <img width="875" alt="image" src="https://github.com/yumin00/blog/assets/130362583/cb9fce73-a17e-4c33-8011-8b56612a595e">
 로그인 페이지에서는 기본적으로 airflow / airflow 로 로그인이 가능하다.
-
+w
 ### 📝 Hello World DAG 생성
 여기에서 이야기한 것처럼, DAG에 정의되는 TASK들은 오퍼레이터를 통해 정의된다.
 
