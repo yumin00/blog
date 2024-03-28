@@ -25,6 +25,14 @@ Mac에서는 `Activity Monitor.app`을 통해 프로세스를 확인할 수 있�
 
 # Process vs Thread
 ## Process
+[단일 프로세스]
+
+<img width="346" alt="image" src="https://github.com/yumin00/blog/assets/130362583/5fb6dd66-f5b1-47bc-9ba7-f089a3f2997d">
+
+[멀티 프로세스]
+
+<img width="708" alt="image" src="https://github.com/yumin00/blog/assets/130362583/5854eea9-5387-476c-8cc8-2fd98275e63d">
+
 프로세스는 Code, Data, Stack, Heap의 구조로 되어있는 독립된 메모리 영역을 할당 받는다. 또한, 프로세는 최소 한 개 이상의 스레드를 갖는다.
 
 각 프로세스는 별도의 주소 공간에 할당되고, 서로 독자적인 메모리를 갖기 때문에 서로 메모리를 공유할 수 없다.
@@ -52,6 +60,14 @@ Mac에서는 `Activity Monitor.app`을 통해 프로세스를 확인할 수 있�
 이러한 여러가지 작업으로 생기는 이 갈래들을 스레드(Thread)라고 한다.
 
 ## Thread
+[단일 스레드]
+
+<img width="262" alt="image" src="https://github.com/yumin00/blog/assets/130362583/286eb377-cf11-4639-806f-1ff309363f63">
+
+[멀티 스레드]
+
+<img width="692" alt="image" src="https://github.com/yumin00/blog/assets/130362583/989a5cdf-01fd-4751-b365-ac795eefddbd">
+
 스레드(thread)는 프로세스가 할당 받은 자원을 이용하여 실제로 작업을 수행하며, 프로세스의 특정한 수행 경로이자 프로세스 내에서 실행되는 여러 흐름의 단위이다.
 
 프로세스가 운영체제로부터 자원을 할당 받으면 그 자원을 스레드가 사용한다. 프로세스는 최소 한 개 이상의 스레드를 가지며, 이 스레드를 메인 스레드라고 한다.
@@ -68,9 +84,11 @@ Mac에서는 `Activity Monitor.app`을 통해 프로세스를 확인할 수 있�
 > 
 > 특정 작업을 위해 사용되는 간접적인 처리 시간, 메모리 등
 
-- 프로세스 간의 통신은 IPC를 통해 이뤄질 수 있는데, 더 자세한 내용은 [여기](https://yumin.dev/p/ipc/)에서 볼 수 있다.
 
 ### 멀티 스레드
 - 하나의 응용프로그램을 여러 개의 스레드로 구성하고 각 스레드가 하나의 작업을 처리
 - 시스템 콜이 줄어들어 자원 관리가 용이
 - 하나의 스레드에 문제가 발생하면 전체 프로세스가 영향을 받음
+- 자원 공유에서 동기화 문제가 발생할 수 있음
+
+프로세스/스레드 간의 통신은 IPC를 통해 이뤄질 수 있는데, 더 자세한 내용은 [여기](https://yumin.dev/p/ipc/)에서 볼 수 있다.
