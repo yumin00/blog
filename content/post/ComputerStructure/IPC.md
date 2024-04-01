@@ -24,6 +24,8 @@ categories :
 > ### 프로세스 메모리 구조
 <img width="300" alt="image" src="https://github.com/yumin00/blog/assets/130362583/cea79ecd-9aa4-4f00-9366-9a39f48fcb25">
 
+프로세스에 대한 더 자세한 내용은 [여기](https://yumin.dev/p/process-vs-program-vs-thread/)에서 확인할 수 있다.
+
 > ### 프로세스 스케줄링
 하나의 CPU로 프로세스를 동시에 실행시킬 수 없다. 그래서 CPU는 여러 프로세스를 일정한 기준으로 순서를 정해서 실행한다. CPU 할당 순서 및 방법을 결정하는 과정을 프로세스 스케줄링이라고 한다.
 
@@ -90,6 +92,7 @@ IPC 통신에서 프로세스 간 데이터를 동기화하고 보호하기 위�
 
 ## 구현 방식
 ### (1) PIPE
+- Messgae Passing Model
 - 단방향으로 메시지를 전달하는 IPC 방법
 - 부모가 같거나, 부모자식 관계에서만 사용 가능
 - fd(file descripter)를 이용해서 연결해야하기 때문에 관계 없는 프로세스간 통신은 불가능
@@ -103,13 +106,15 @@ pipe - golang 구현은 [여기](https://github.com/yumin00/IPC/blob/main/pipe/p
 
 
 ### (2) FIFO(named pipe)
+- Message Passing Model
 - 파일을 이용해 메시지 전하는 IPC 방법
 - PIPE와 다르게 부모가 다른 프로세스 간에도 IPC 통신 가능
 - 파일을 통해 fd를 얻기 때문에 부모를 공유해야 한다는 제약이 없다.
 
 fifo - golang 구현은 [여기](https://github.com/yumin00/IPC/blob/main/main.go)에서 확인할 수 있다.
 
-### (3) 메세지 큐
+### (3) Message Queue
+- Message Passing Model
 - 메시지큐 자료구조는 커널에서 관리하기 때문에 프로세스 간 통신이 가능하다.
 - sender 프로세스가 종료되어도 메시지가 사라지지 않는다.
 - 특정 타입의 메시지만 선별적으로 받아올 수 있다.
@@ -118,3 +123,17 @@ direct이든 아니든, 임시의 queue 안의 프로세스들이 통신하여 m
 - Zero capacity : buffer가 0으로, 메시지를 보낼 때마다 block
 - Bounded capacity : queue 길이가 n / n개의 메시지만 보낼 수 있음 / 꽉 차면 block
 - Unbounded capacity : queue 길이가 무한대 / unblock
+
+### (4) Memory Map
+- Shared Memory Model
+- 파일을 메모리의 주소 공간에 매핑하는 방식이다.
+- 두 개 이상의 프로세스가 매핑된 파일의 내용을 통해 데이터를 공유하고 전달할 수 있다.
+- 큰 파일을 작업할 때, 전체 파일을 메모리에 로드하지 않고 필요한 부분만 메모리에 매핑하여 사용함으로써, 메모리 사용을 최적화하고, 시스템 자원을 효율적으로 사용할 수 있게 한다.
+
+### (5) Socket
+- Message Passing Model
+- 소켓은 네트워크 상에서 프로세스 간에 데이터 통신하는 방식이다.
+- 클라이언트-서버 모델을 기반으로 동작한다.
+  - 서버: 특정 포트에서 클라이언트의 연결 요청을 기다린다.
+  - 클리아언트: 서버의 IP 주소와 포트 번호를 통해 서버에 연결한다.
+- 양방향 통신이 가능하다.
