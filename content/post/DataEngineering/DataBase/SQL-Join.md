@@ -1,7 +1,7 @@
 ---
 title: "SQL JOIN 에 대해 알아보자"
 date: 2024-04-26T17:44:01+09:00
-draft: true
+draft: false
 categories :
 - DataBase
 - DataEngineering
@@ -35,4 +35,3 @@ RIGHT JOIN(RIGHT OUTER JOIN) 은 column을 기반으로 일치하는 값이 있�
 ![image](https://github.com/yumin00/blog/assets/130362583/277a43fc-2b9e-41b7-ba72-67e557c21ff2)
 FULL OUTER JOIN 은 column을 기반으로 일치하는 값이 있는 데이터뿐만 아니라 왼쪽, 오른쪽 테이블의 데이터를 반환한다.
 일치하는 항목이 없으면 Null을 반환한다.
-
