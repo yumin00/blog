@@ -45,11 +45,14 @@ CROSS JOIN(상호 조인)은 한쪽 테이블의 모든 행과 다른쪽 테이�
 카테시안 곱(CARTESIAN PRODUCT) 이라고도 한다.
 
 ## 차집합
+![image](https://github.com/yumin00/blog/assets/130362583/b0b8b001-ffcd-4042-9163-305dabeea41f)
 
 SQL JOIN에서 차집합은 LEFT JOIN || RIGHT JOIN 을 사용하여 두 테이블을 결합하고,
-오른쪽 || 왼쪽의 열이 NULL 인 행을 필터링하여 데이터를 반환할 수 있다. 예시는 다음과 같다.
+오른쪽 || 왼쪽의 열이 NULL 인 행을 필터링하여 데이터를 반환할 수 있다. 예시 SQL문은 다음과 같다.
 
 ```sql
-LEFT JOIN Managers M ON E.EmployeeID = M.EmployeeID
-WHERE M.EmployeeID IS NULL;
+SELECT n.id, n.이름, n.과목, n.점수
+FROM name as n
+LEFT JOIN age as a ON n.이름 = a.이름 
+WHERE a.이름 IS NULL;
 ```
