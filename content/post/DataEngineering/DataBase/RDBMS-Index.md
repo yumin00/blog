@@ -1,7 +1,7 @@
 ---
 title: "RDBMS에서 Index를 사용하는 이유"
 date: 2024-04-18T19:52:46+09:00
-draft: true
+draft: false
 categories :
 - DataBase
 - DataEngineering
