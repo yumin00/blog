@@ -95,3 +95,84 @@ CREATE INDEX sales_id_index ON order (sales_id);
 - 통계 정보: 각 테이블과 컬럼별 데이터 분포, 행의 개수, 평균 행 길이 등의 정보를 분석
 - 쿼리 조건: 쿼리 내 조건을 고려하여, 특정 행만 조회하는 경우에는 인덱스를 선택하고, 조건이 없거나 대부분의 행을 조회해야 하는 경우 전체 스캔
 - 인덱스가 지원하는 연산 유형을 고려하여 B-트리, GiST, GIN 등 최적화된 인덱스 타입 선택
+
+# Index 속도 비교
+이번에는, index가 있을 때와 없을 때의 쿼리 속도를 비교해보고자 한다.
+
+`order` 테이블에서 index가 있을 때와 없을 때의 조회 쿼리 속도를 비교해 보았다. 실행한 쿼리는 다음과 같다.
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM public.order
+WHERE sales_id = 1175;
+```
+
+<img width="1086" alt="image" src="https://github.com/yumin00/blog/assets/130362583/444068f0-cbd1-405e-bb3b-c6dfa3f371b3">
+<img width="1074" alt="image" src="https://github.com/yumin00/blog/assets/130362583/709e9ad5-9fcd-4d57-9121-4156c26bb888">
+
+
+첫 번재 사진은 인덱스를 설정하지 않았을 경우이고, 두 번재 사진은 인덱스를 설정한 경우이다.
+
+### 인덱스 설정 X
+- Sequential Scan
+- 실행시간 : 1.433ms
+- 비용: 0.00 to 197.57
+- order 테이블의 모든 행을 처음부터 끝까지 검색
+
+### 인덱스 설정 O
+- Index Scan
+- 0.174ms
+- 0.29 to 8.30
+- 인덱스 트리 구조를 사용하여 특정 sales_id 값에 직접 접근
+
+인덱스가 설정되어 있을 때와 없을 때의 쿼리 속도와 비용 차이를 명확하게 확인할 수 있다.
+인덱스가 설정되어 있다면, PostgreSQL은 `sales_id` 를 기준으로 데이터를 훨씬 더 빠르고 효율적으로 찾아낸다는 것을 알 수 있다!
+
+그렇다면, JOIN문에서도 index 가 효율적으로 사용될까?
+
+`sales`와 `order` 테이블이 존재하고, `order` 테이블에서는 `sales` 테이블의 id인 `sales_id` 가 인덱스로 설정되어 있다.
+`order` 테이블에서 `sales_id`를 인덱스로 설정했을 때와 아닐 때의 쿼리 속도를 비교해보자!
+실행하고자 하는 쿼리는 다음과 같다.
+
+```sql
+EXPLAIN ANALYZE
+SELECT o.id, o.order_date, o.status, s.sales_date, s.units_sold
+FROM order o
+JOIN sales s ON o.sales_id = s.id;
+```
+<img width="987" alt="image" src="https://github.com/yumin00/blog/assets/130362583/d5bf99e4-8cfb-4d21-bc4d-4e1003dc0021">
+<img width="996" alt="image" src="https://github.com/yumin00/blog/assets/130362583/d11a47e4-5811-4471-b222-ea07d034725d">
+
+첫 번째 사진은 인덱스를 설정하지 않았을 경우이고, 두 번째 사진은 인덱스를 설정했을 경우이다.
+
+인덱스를 설정했을 때, 실행 시간이 약간 개선된 것으로 보이지만, 여기서 중요한 점은 실행 시, Seq Scan과 Hash Join이 사용된다는 것이다.
+인덱스를 설정했을 경우에도, order 테이블에서 인덱스를 통핸 스캔이 아니라 순차 스캔을 사용하고 있으며, 인덱스가 스캔에 전혀 영향을 주고 있지 않다. 이것의 의미는 쿼리문에서 인데스가 조인 최적화에 활용하지 않고 있다는 것을 의미하기도 하다.
+나의 예상으로는, `sales` 와 `order` 테이블은 `sales.id`와 `order.sales_id`가 서로 1:1로 매칭되어 있기 때문에 WHERE 절을 통해 데이터를 찾는 것이 아니라면 인덱스가 효율성을 높이는 역할을 하는 것은 아닌 것 같다.
+
+그러면, WHERE 절을 추가하여 인덱스의 쿼리 속도를 비교해보자.
+
+다음과 같은 쿼리문을 사용해보았다.
+
+```sql
+EXPLAIN ANALYZE
+SELECT o.id, o.order_date, o.status, s.sales_date, s.units_sold
+FROM public.order o
+JOIN sales s ON o.sales_id = s.id
+WHERE o.sales_id = 1175;
+```
+<img width="1038" alt="image" src="https://github.com/yumin00/blog/assets/130362583/658e2dcf-0834-4705-8a04-eb315123c180">
+<img width="1106" alt="image" src="https://github.com/yumin00/blog/assets/130362583/d9afe087-7353-4eb9-bf2d-28b2f54bfb1b">
+
+첫 번재 사진은 인덱스를 설정하지 않았을 경우이고, 두 번재 사진은 인덱스를 설정한 경우이다.
+
+### 인덱스 설정 X
+- Nested Loop Join
+- order 테이블에서 Sequential Scan 을 사용하여 조회
+- sales 테이블에서 id 에 대한 Index Scan 을 사용하여 조회 (sales.id는 기본키이다)
+
+
+### 인덱스 설정 O
+- Nested Loop Join
+- order/sales 모두 Index Scan 사용
+
+인덱스를 설정했을 때, 쿼리의 비용과 속도가 감소하는 것을 볼 수 있다. 이는 order 테이블에서 sales_id를 찾을 때 Index Scan 을 사용함으로써 데이터를 효율적으로 조회했음을 알 수 있다!
