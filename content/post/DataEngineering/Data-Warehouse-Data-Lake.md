@@ -87,3 +87,25 @@ categories :
 ## 데이터 레이크 관리 툴
 - Apache Hadoop
 - Apache Spark
+
+## 데이터 레이크 사용 사례
+### 데브시스터즈의 데이터 레이크 구축 사례
+<img width="680" alt="image" src="https://github.com/yumin00/blog/assets/130362583/8da557b7-0f09-48c3-a44b-686e5a953326">
+데브시스터즈에서는 위와 같은 아키텍처를 가지고 데이터 인프라를 구축했었다고 한다. Indexed Log를 통해 각 팀에게 데이터를 전달하는 방식으로 보인다.
+데브시스터즈에서 해당 아키텍처에서 어려움을 느낀 것은 바로 데이터가 필요한 부서가 늘어나고, 각 부서가 서로 다른 데이터 다른 형식으로 데이터를 요청한다는 것이었다.
+
+각 부서에서 서로 다른 데이터/형식을 요청하기 때문에 이를 위해 다양한 포맷을 지원하기 위해 데이터 레이크를 도입했다고 한다.
+또한 데이터 계층화를 진행했는데, 아래 사진처럼 데이터 성격마다 계층화를 진행하여 각 부서에게 필요한 데이터를 전달하는 방식으로 진행했다고 한다.
+<img width="988" alt="image" src="https://github.com/yumin00/blog/assets/130362583/6d3efbd7-7c02-4ab9-93ea-f865dc2960be">
+
+<img width="1049" alt="image" src="https://github.com/yumin00/blog/assets/130362583/ab97b5fa-ff72-46e7-b5d1-5c69b3221368">
+결국 이러한 아키텍처를 설계함으로써, 데이터레이크에 Raw Data를 적재하고 필요에 따라 Analytics Data로 변환한 다음, 부서마다 원하는 데이터로 변환하여 데이터를 전달할 수 있도록 하였다.
+
+### 나의 생각
+처음에는 데이터 레이크를 사용하게 되면, Raw Data를 모두 데이터레이크에 적재하고, 각 부서의 필요에 맞춰 바로 데이터를 변환하여 제공해주면 될 것이라고 생각했다.
+
+하지만 데브시스터즈에서는 Analytic Layer를 추가하였다. 해당 layer를 추가함으로써 중복을 제거하고, log 종류별로 파티셔닝을 함으로써 데이터를 Objective Layer로 보내기 전,
+데이터의 무결성을 검증하고, 더 효율적으로 데이터를 변환할 수 있다는 것을 알게 되었다.
+
+### 참고자료
+[데브시스터즈 데이터 레이크 구축 이야기 : Data Lake architecture case study (박주홍 데이터 분석 및 인프라 팀장 / 이준호 데이터 분석 및 BI 팀장, 데브시스터즈) :: Gaming on AWS 2018](https://www.slideshare.net/awskorea/data-lake-architecture-case-study-bi-gaming-on-aws-2018)
