@@ -27,11 +27,11 @@ params:
   sidebar:
     compact: false
     emoji: 🐶
-    subtitle: Backend Developer / Go
+    subtitle: DataEngineer
     avatar:
       enabled: true
       local: true
-      src: img/profile.png
+      src: img/profile2.png
 
   article:
     math: false
