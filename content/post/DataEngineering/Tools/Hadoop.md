@@ -187,5 +187,193 @@ HBase는 구글 BigTable을 기반으로 개발된 비관계형 데이터베이�
 - HDFS에 있는 데이터를 변경할 수 없다.
 - 실시간 데이터 분석과 같은 스트리밍 서비스에는 부적합하다.
 
-## 하둡을 직접 사용해보자.
+## 하둡을 직접 설치해 보자.
+### 1. 하둡 설치
+먼저, 하둡을 설치하자.
+```
+brew install hadoop
+```
 
+### 2. 환경 변수 수정
+이제 설치한 하둡 위치로 이동해보자. 1번 명령어를 통해 얻은 경로로 2번 명령어를 통해 이동해보자.
+그리고 환경 변수가 있는 파일들을 수정하기 위해 3번 명령어로 이동해야한다.
+
+```
+## 1. hadoop 경로 확인
+brew info hadoop
+
+## 2. hadoop 경로로 이동
+cd /opt/homebrew/Cellar/hadoop/3.4.0
+
+## 3. 파일 수정을 위해 이동
+cd libexec/etc/hadoop
+```
+
+#### 2-1. Java 버전 명시
+Hadoop은 Java로 작성되었기 때문에, Java 런타임 환경이 반드시 필요하다. 때문에 `hadoop_env.sh`에 Hadoop이 실행할 때 사용할 JAVA 버전을 명시적으로 지정해줘야 한다.
+
+```shell
+/usr/libexec/java_home
+```
+
+위 명령어를 통해 Java의 설치 경로를 알 수 있다.
+
+```shell
+open hadoop-env.sh
+```
+
+파일을 열고, 맨 아래에 자바 경로를 표시해주면 된다.
+
+```shell
+export JAVA_HOME="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home"
+```
+
+#### 2-2. HDFS 주소 설정
+여러 구성 파일 중에서 core-site.xml은 Hadoop의 기본 설정을 담고 있다. core-site.xml에 URI를 설정하여 해당 주소를 파일 시스템으로 사용할 수 있도록 설정해주어야 한다. 
+
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0/libexec/etc/hadoop
+vi core-site.xml
+```
+
+core-site.xml을 열어서 다음 설정을 추가해줘야 한다.
+
+```shell
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://localhost:9000</value>
+  </property>
+</configuration>
+```
+
+- `fs.defaultFS`: "기본 파일 시스템 주소" 를 의미한다.
+- `hdfs://localhost:9000`: HDFS는 localhost:9000 주소를 사용하라는 뜻이다.
+
+#### 2-3. HDFS 옵션 설정
+다음으로, HDFS에서 파일의 복제본 개수를 설정해보자.
+
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0/libexec/etc/hadoop
+vi hdfs-site.xml
+```
+
+hdfs-site.xml 을 열어서 다음 설정을 추가해보자.
+
+```shell
+<configuration>
+  <property>
+    <name>dfs.replication</name>
+    <value>3</value>
+  </property>
+</configuration>
+```
+
+- `dfs.replication`: HDFS에서 파일의 복제본(복제 블록)의 개수를 의미한다.
+- 3: 각 파일의 복제본을 3개를 만들겠다는 뜻이다.
+
+#### 2-4. MapReduce 설정
+다음으로는 MapReduce 작업이 올바르게 실행될 수 있도록 필요한 환경과 경로를 지정해보자.
+
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0/libexec/etc/hadoop
+vi mapred-site.xml
+```
+
+mapred-site.xml 을 열어서 다음 설정을 추가해보자.
+
+```shell
+<configuration>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+  <property>
+    <name>mapreduce.application.classpath</name>
+    <value
+      >$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value
+    >
+  </property>
+</configuration>
+```
+
+- mapreduce.framework.name / yarn: MapReduce 프레임워크를 YARN(Yet Another Resource Negotiator) 를 사용하겠다는 의미이다.
+
+> YARN
+> 
+> 하둡의 자원 관리와 스케줄링을 담당하는 프레임워크로, 맵리듀스뿐만 아니라 다양한 분산 컴퓨팅 작업을 실행할 수 있게 도와준다. yarn으로 설정하면, 모든 맵리듀스 작업이 YARN 클러스터 위에서 실행된다.
+
+#### 2-5. YARN 환경 설정
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0/libexec/etc/hadoop
+vi yarn-site.xml
+```
+
+```shell
+<configuration>
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.env-whitelist</name>
+    <value
+      >JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_HOME,PATH,LANG,TZ,HADOOP_MAPRED_HOME</value
+    >
+  </property>
+</configuration>
+```
+
+### 3. 하둡 실행
+#### 3-1. 파일 시스템 포맷
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
+hdfs namenode -format
+```
+기존에 있는 데이터를 모두 삭제하고, 새 파일 시스템 구조를 만드는 작업이다. 네임 노드를 초기화하고, 파일 시스템의 메타데이터를 생성하는 작업이다.
+
+#### 3-3. 사용자 디렉토리 생성
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
+bin/hdfs dfs -mkdir /user
+bin/hdfs dfs -mkdir /user/<username>
+```
+사용자별 디렉토리를 만들면, 사용자가 자신의 데이터를 독립적으로 관리할 수 있기 때문에 위와 같이 별도의 디렉토리를 만드는 것이다.
+
+#### 3-4. 하둡 실행
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
+sbin/start-all.sh
+```
+해당 명령어를 통해 하둡을 실행시킬 수 있다. 
+
+#### 3-5. 실행 확인
+```shell
+## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
+jps
+```
+해당 명령어를 통해 하둡이 정상적으로 실행되고 있는 것을 확인할 수 있다!
+```shell
+15042 Main
+53250 Jps 
+627 Main
+50055 ResourceManager
+50152 NodeManager
+633 
+52043 NameNode
+52284 SecondaryNameNode
+```
+
+각 행은 다음과 같은 정보를 제공한다.
+- 프로세스 ID(PID): 첫 번째 숫자는 각 프로세스의 고유한 식별자이다.
+- 프로세스 이름: 두 번째 필드는 프로세스의 이름이다. 이 이름은 실행 중인 Java 클래스나 애플리케이션을 나타낸다.
+
+해당 명령어를 통해 클러스터의 상태를 모니터링할 수 있고 문제를 진단해볼 수 있다.
+
+localhost 로 접속해서 직접 확인해 볼 수 있다.
+
+- Cluster status : http://localhost:8088
+- HDFS status : http://localhost:9870
+- Secondary NameNode status : http://localhost:9868
+
+## 하둡 사용해 보자.
