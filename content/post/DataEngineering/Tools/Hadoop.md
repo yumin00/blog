@@ -377,3 +377,13 @@ localhost 로 접속해서 직접 확인해 볼 수 있다.
 - Secondary NameNode status : http://localhost:9868
 
 ## 하둡 사용해 보자.
+하둡 실행이 완료되었다면, HDFS와 맵리듀스를 간단하게 사용해보고자 한다.
+
+### 1. HDFS에 파일 업로드 및 다운로드
+#### 1-1. 파일 생성
+먼저, 해당 명령어를 통해 로컬 파일 시스템에 텍스트 파일을 생성한다.
+```
+echo "Hello Hadoop" > hello.txt
+```
+
+#### 1-2. HDFS에 파일 업로드
