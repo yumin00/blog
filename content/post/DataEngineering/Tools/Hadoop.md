@@ -264,7 +264,11 @@ hdfs-site.xml 을 열어서 다음 설정을 추가해보자.
 <configuration>
   <property>
     <name>dfs.replication</name>
-    <value>3</value>
+    <value>1</value>
+  </property>
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>/usr/local/hadoop/data</value>
   </property>
 </configuration>
 ```
@@ -332,7 +336,7 @@ hdfs namenode -format
 ```
 기존에 있는 데이터를 모두 삭제하고, 새 파일 시스템 구조를 만드는 작업이다. 네임 노드를 초기화하고, 파일 시스템의 메타데이터를 생성하는 작업이다.
 
-#### 3-3. 사용자 디렉토리 생성
+#### 3-2. 사용자 디렉토리 생성
 ```shell
 ## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
 bin/hdfs dfs -mkdir /user
@@ -340,14 +344,14 @@ bin/hdfs dfs -mkdir /user/<username>
 ```
 사용자별 디렉토리를 만들면, 사용자가 자신의 데이터를 독립적으로 관리할 수 있기 때문에 위와 같이 별도의 디렉토리를 만드는 것이다.
 
-#### 3-4. 하둡 실행
+#### 3-3. 하둡 실행
 ```shell
 ## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
 sbin/start-all.sh
 ```
 해당 명령어를 통해 하둡을 실행시킬 수 있다. 
 
-#### 3-5. 실행 확인
+#### 3-4. 실행 확인
 ```shell
 ## 위치: /opt/homebrew/Cellar/hadoop/3.4.0
 jps
@@ -376,14 +380,4 @@ localhost 로 접속해서 직접 확인해 볼 수 있다.
 - HDFS status : http://localhost:9870
 - Secondary NameNode status : http://localhost:9868
 
-## 하둡 사용해 보자.
-하둡 실행이 완료되었다면, HDFS와 맵리듀스를 간단하게 사용해보고자 한다.
-
-### 1. HDFS에 파일 업로드 및 다운로드
-#### 1-1. 파일 생성
-먼저, 해당 명령어를 통해 로컬 파일 시스템에 텍스트 파일을 생성한다.
-```
-echo "Hello Hadoop" > hello.txt
-```
-
-#### 1-2. HDFS에 파일 업로드
+## Hadoop 기업 사례
