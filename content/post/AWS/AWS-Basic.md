@@ -60,14 +60,46 @@ AMI(Amazon Machine Image)란, 소프트웨어 구성이 기재된 템플릿이�
 
 어플리케이션이 특정 OS에서만 작동할 경우, 해당 OS를 포함하는 AMI를 선택해야 하며, 최신 상태의 AMI를 선택하는 것이 중요하다!
 
-AMI를 선택할 때는 타입을 선택할 수 있다. 표준 AMI, 커뮤니티 AMI, 마텟플레이스 AMI 중에 선택할 수 있다.
+기본적으로, Amazon Linux 2는 아마존에서 제공하는 것으로, AWS 서비스와 호환성이 뛰어나고, 보안 업데이트/성능 최적화를 위해 지속적으로 관리된다고 한다. 일반적인 용도에 적합하다고 하여 이번 서버 배포의 AMI는 Amazon Linux 2로 설정하여 진행해보고자 한다.
 
-- 표준 AMI: AWS에서 제공하며, 신뢰성이 높고 보안적으로 검증된 이미지
-- 커뮤니티 AMI: 다른 AWS 사용자가 생성하고 공유한 이미지
-- 마켓플레이스 AMI: 제3자 소프트웨어 벤더가 제공하고 AWS가 호스팅하는 이미지
+### 인스턴스 유형
+<img width="810" alt="image" src="https://github.com/yumin00/blog/assets/130362583/acbc7d47-9dd1-43c4-aa91-19579f766a07">
 
-다음으로는 OS를 선택할 수 있는데, 가장 널리 사용되는 운영 체제는 Linux와 Windows이다. 예를 들어, Linux를 선택할 경우 "Amazon Linux", "Ubuntu", "Red Hat Enterprise Linux" 등의 옵션이 있습니다.
+EC2 인스턴스 유형은 다양한 사용 사례에 맞게 설계된 여러 가지 인스턴스 유형을 제공한다. 작은 웹 서버나 테스트 서버의 경우에는  t3 인스턴스는 경제적이면서도 충분한 성능을 제공한다고 한다.
 
-소프트웨어 요구사항: 필요한 소프트웨어가 사전에 설치된 AMI를 찾거나, 필요에 따라 후속 설정을 통해 추가할 수 있습니다.
+따라서 이번에는 t3.small 을 설정해보고자 한다. 
 
-AMI를 선택한 후에는 인스턴스 유형을 선택하고 추가 설정을 진행하게 됩니다. 올바른 AMI를 선택하는 것은 인스턴스 구성의 중요한 첫걸음이므로, 애플리케이션 요구사항과 호환되는 옵션을 신중히 고려해야 합니다.
+### 키 페어
+<img width="781" alt="image" src="https://github.com/yumin00/blog/assets/130362583/3f454d04-d817-4841-a819-dff5826806db">
+
+키 페어는 만들어지는 EC2 인스턴스에 대한 안전한 SSH 접속을 위하여 사용된다.
+- 공개 키(Public Key): EC2 인스턴스에 저장된다.
+- 개인 키(Private Key): 사용자의 로컬 컴퓨터에 저장된다.
+
+<img width="923" alt="image" src="https://github.com/yumin00/blog/assets/130362583/9057ee2f-90db-49f3-8209-d9875f4b23b4">
+키 페어 메뉴에서 키 페어를 생성하여 적용할 수 있다!
+
+### 인스턴스 연결
+<img width="1533" alt="image" src="https://github.com/yumin00/blog/assets/130362583/90b71bde-eaa3-4a14-bbda-e138bfcffc3e">
+이제 인스턴스를 연결해보자. 만든 인스턴스에서 연결을 눌러 인스턴스를 연결할 수 있다.
+
+<img width="856" alt="image" src="https://github.com/yumin00/blog/assets/130362583/60e8cdf1-2f19-42c3-a5fc-acbdc786c0a5">
+EC2 인스턴스 연결을 통해 AWS에서 제공하는 터미널 인터페이스를 통해 연결하는 방법이 있고,
+
+<img width="857" alt="image" src="https://github.com/yumin00/blog/assets/130362583/ee2757fa-984b-485f-82c6-1266db526c09">
+직접 로컬 터미널에서 EC2 인스턴스를 연결하는 방법이 있다. 나느 AWS에서 제공하는 터미널 인터페이스를 사용하여 진행해보았다.
+
+<img width="1798" alt="image" src="https://github.com/yumin00/blog/assets/130362583/dcc5a8bf-24f4-4957-99d6-dc4951568697">
+그러면 이렇게 인스턴스에 연결한 것을 확인할 수 있다.
+
+### 배포
+- sudo su
+- lsof 0u
+- 80이 없음. 80을 실행시켜줘야함 -> git 연결
+- 깃헙에서 personala ccess token 발급
+- yum install git
+- git clone https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPOSITORY}
+- home에 yumin 생성 mkdir yumin
+- https://kdev.ing/install-docker-compose-in-amazon-linux-2023/ 도커 컴포즈 설치
+- sudo service docker start
+- docker compose up -d
