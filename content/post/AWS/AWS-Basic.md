@@ -81,25 +81,84 @@ EC2 인스턴스 유형은 다양한 사용 사례에 맞게 설계된 여러 �
 
 ### 인스턴스 연결
 <img width="1533" alt="image" src="https://github.com/yumin00/blog/assets/130362583/90b71bde-eaa3-4a14-bbda-e138bfcffc3e">
+
 이제 인스턴스를 연결해보자. 만든 인스턴스에서 연결을 눌러 인스턴스를 연결할 수 있다.
 
 <img width="856" alt="image" src="https://github.com/yumin00/blog/assets/130362583/60e8cdf1-2f19-42c3-a5fc-acbdc786c0a5">
+
 EC2 인스턴스 연결을 통해 AWS에서 제공하는 터미널 인터페이스를 통해 연결하는 방법이 있고,
 
+
 <img width="857" alt="image" src="https://github.com/yumin00/blog/assets/130362583/ee2757fa-984b-485f-82c6-1266db526c09">
+
 직접 로컬 터미널에서 EC2 인스턴스를 연결하는 방법이 있다. 나느 AWS에서 제공하는 터미널 인터페이스를 사용하여 진행해보았다.
 
 <img width="1798" alt="image" src="https://github.com/yumin00/blog/assets/130362583/dcc5a8bf-24f4-4957-99d6-dc4951568697">
+
 그러면 이렇게 인스턴스에 연결한 것을 확인할 수 있다.
 
 ### 배포
-- sudo su
-- lsof 0u
-- 80이 없음. 80을 실행시켜줘야함 -> git 연결
-- 깃헙에서 personala ccess token 발급
-- yum install git
-- git clone https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPOSITORY}
-- home에 yumin 생성 mkdir yumin
-- https://kdev.ing/install-docker-compose-in-amazon-linux-2023/ 도커 컴포즈 설치
-- sudo service docker start
-- docker compose up -d
+#### 1. 슈퍼 유저 권한 설정
+먼저, 다음 명령어를 통해 슈퍼 유저로 전환한다.
+```shell
+sudo su
+```
+
+#### 2. 네트워크 연결 및 포트 정보 확인
+다음 명령어를 통해 현재 네트워크 연결 및 포트 정보를 확인해보자.
+```shell
+lsof -i
+```
+
+![image](https://github.com/yumin00/blog/assets/130362583/ca70976f-368c-4921-a8d2-98563523a521)
+
+리스트를 보면, 서버에 사용해야 하는 80 포트가 없는 것을 확인할 수 있다. 80 포트를 열어주기 위해서 git 을 연결하여 필요한 서버를 연결해줘야 한다.
+
+#### 3. 깃헙 연결
+git을 연결하기 위해 깃헙에서 Personal Access Token을 발급받아야 한다. 깃헙의 settings > Developer Settings 에서 Personal Access Token을 발급받을 수 있다. 이때 토큰의 권한은 보안을 위해 레포만 설정해주었다.
+![image](https://github.com/yumin00/blog/assets/130362583/1c9fc2ce-dacc-47bc-8bdd-bb5d0e3258b6)
+![image](https://github.com/yumin00/blog/assets/130362583/b59e33c3-4409-459b-9763-212d7088f472)
+
+다시 터미널로 돌아와서, git과 연결하기 전 다음 명령어를 통해 먼저 git을 설치해야 한다.
+```shell
+yum install git
+```
+
+그 다음, 실제 사용하고자 하는 레포를 clone해주자. `GITHUB_TOKEN`은 위에서 발급받은 토큰이고, `GITHUB_REPOSITORY` 은 연결하고자 하는 레포이다.
+```shell
+git clone https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPOSITORY}
+```
+
+`ls` 명령어를 통해 git repo에 clone한 것을 확인할 수 있다.
+
+#### 4. 도커 컴포즈 실행
+현재 배포하고자 하는 서버는 도커 컴포즈를 통해 실행할 수 있기 때문에 도커 컴포즈를 설치해야 한다. ([참고](https://kdev.ing/install-docker-compose-in-amazon-linux-2023/))
+
+```shell
+# Docker
+sudo yum install -y docker
+sudo usermod -aG docker ec2-user
+sudo systemctl enable --now docker
+exec bash
+
+docker ps
+
+# Compose Plugin
+sudo mkdir -p /usr/local/lib/docker/cli-plugins/
+sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+docker compose version
+```
+
+모두 완료됐다면, 이제 도커를 실행하여 배포해보자.
+```shell
+sudo service docker start
+docker compose up -d
+```
+
+이제 다시 포트 정보를 확인해보면 `docker-pr` 을 확인할 수 있다.
+```shell
+lsof -i
+```
+
