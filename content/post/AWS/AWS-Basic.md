@@ -161,4 +161,15 @@ docker compose up -d
 ```shell
 lsof -i
 ```
+![image](https://github.com/yumin00/blog/assets/130362583/7492f6e8-3b0e-4ce7-b04a-0a21008b69b7)
 
+
+그리고 제대로 확인하기 위해 아래 명령러를 실행해보면, 8080 포트가 제대로 열려있는 것을 확인할 수 있다!
+```shell
+docker ps
+```
+![image](https://github.com/yumin00/blog/assets/130362583/25f19d37-a1ca-4435-947f-b9d1fbfcc586)
+
+이렇게 AWS를 통해 배포를 완료하였다 :) !!
+
+이제 문제는, 현재 MySQL을 사용하고 있는데 해당 인스턴스가 내려가면 MySQL에 저장된 데이터가 모두 사라진다는 것이다. 이를 방지하고자 볼륨을 사용해야 한다.
