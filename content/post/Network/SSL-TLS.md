@@ -1,5 +1,5 @@
 ---
-title: "HTTP 와 HTTPS 에 대해 알아보자"
+title: "SSL/TLS 통신 과정"
 date: 2024-05-16T19:21:28+09:00
 draft: false
 categories :
