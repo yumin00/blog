@@ -32,7 +32,6 @@ params:
       enabled: true
       local: true
       src: img/profile2.png
-
   article:
     math: false
     toc: true
