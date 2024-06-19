@@ -1,7 +1,7 @@
 ---
 title: "DAU 파이프라인 설계"
 date: 2024-06-18T21:10:45+09:00
-draft: true
+draft: false
 categories :
 - DataEngineering
 ---
@@ -38,3 +38,8 @@ BigQuery에서 데이터를 추출할 때 중요한 것은 쿼리 성능을 최�
 그렇기 때문에 파티셔닝을 사용하여 불필요한 데이터 스캔을 방지하고 쿼리 성능을 향상시키고 비용을 절감하고자 한다. 테이블은 날짜를 기준으로 분할할 것이다.
 
 이때, DAU를 산출하고자 하는 날짜의 로그를 모두 가져와 중복되는 userId를 제거해야 한다. 데이터 처리 속도를 빠르게 하기 위해 Spark를 사용할 것이고 이는 Airflow DAG로 실행시킬 것이다.
+
+## 데이터 저장
+Airflow DAG를 사용하여 DAU를 산출한 뒤, 이를 데이터 사이언티스트에게 전달해야 한다. 전달하는 방식은 데이터 사이언티스트의 요청대로 전달해 줄 것이다. (ex. DB, xlsx)
+
+![image](https://github.com/yumin00/blog/assets/130362583/a6f8d8d5-9b1e-4103-bf62-b4655057bd2d)
