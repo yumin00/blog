@@ -1,7 +1,7 @@
 ---
 title: "Redis에 대해 알아보자"
 date: 2024-06-24T21:13:34+09:00
-draft: true
+draft: false
 categories :
 - DataEngineering
 ---
