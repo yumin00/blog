@@ -1,7 +1,7 @@
 ---
 title: "Service DB 에 분석 쿼리를 실행하면 어떤 문제가 발생할까?"
 date: 2024-07-02T18:57:21+09:00
-draft: true
+draft: false
 categories :
 - DataBase
 - DataEngineering
@@ -51,10 +51,10 @@ PostgreSQL는 데이터를 읽을 때, 일반적으로 **공유 잠금 (shared l
 - 분리 DB 추가에 대한 비용 추가를 10% 미만으로 한다.
 
 # 해결 방법
-## 데이터 복제 (with RDBMS)
+## 1. 데이터 복제 (with RDBMS)
 서비스 DB의 데이터를 분석 DB로 복제하여 두 개의 DB를 관리하는 방법이다.
 
-### Pub/Sub & Subscribe Server
+### 1-1. Pub/Sub & Subscribe Server
 Google Cloud Pub/Sub과 같은 메시징 시스템을 사용하여 데이터 변경 이벤트를 분석 DB로 스트리밍하는 방법이다.
 ![image](https://github.com/yumin00/blog/assets/130362583/13f3dc5d-e2ef-4153-967b-db92abb3af17)
 
@@ -71,7 +71,7 @@ Data 변경 이벤트가 발생하면, API 서버는 비동기적으로 Google P
 - 데이터 변경 이벤트와 Message Publish 를 모두 API 서버에서 관리해야 때문에, 시스템 결합도가 높아져 유지보수가 어려워질 수 있다.
 - Service DB의 스키마 버전, Google Pub/Sub 스키마 버전, Bigqeury 스키마 버전을 관리하지 않으면 스키마 불일치로 인한 오류가 발생할 수 있다.
 
-### Airflow
+### 1-2. Airflow
 Airflow를 사용하여 서비스 DB의 데이터 변경을 감지하고 이를 분석 DB에 복제하는 방법이다.
 
 ![image](https://github.com/yumin00/blog/assets/130362583/67c1c2e6-13f7-4a2d-8ad2-9ab2d31e89b2)
@@ -87,10 +87,10 @@ Service DB의 데이터 변경 이벤트를 Trigger하는 DAG를 생성하고, �
 - Airlfow를 사용하고 있지 않다면 초기 설정 및 구성에 대한 러닝커브가 존재한다.
 - Airflow 운영을 위해서 추가적인 인프라 및 리소스가 필요할 수 있다.
 
-## 데이터 복제 (with BigQuery)
+## 2. 데이터 복제 (with BigQuery)
 데이터를 복제하되 1번과 다르게 PostgreSQL이 아닌 BigQuery를 사용하여 복제하는 방법이다.
 
-### Google Pub/Sub (ETL)
+### 2-1. Google Pub/Sub (ETL)
 Google Cloud Pub/Sub과 같은 메시지 패싱 시스템을 사용하여 데이터 변경 이벤트를 전송하고, 변경된 데이터를 BigQuery 로 스트리밍하는 방법이다.
 ![image](https://github.com/yumin00/blog/assets/130362583/a8a18e8c-6cc6-4fb2-b221-a123475d2ceb)
 
@@ -150,6 +150,14 @@ Google Cloud Pub/Sub과 같은 메시지 패싱 시스템을 사용하여 데이
 3. Google Functions 을 통해 요구사항에 맞춰 데이터를 변환한 뒤 Bigquery Table에 적재합니다.
 4. Redash에서는 SELECT 쿼리만 사용하여 데이터를 시각화합니다.
 
-해당 방법은 서비스 DB와 분석 DB를 분리하고, RDBMS가 아닌 BigQuery 테이블을 사용함으로써 비용을 절감하고, 요구사항에 맞춘 테이블을 설계함으로써 쿼리 지연 속도를 줄일 수 있습니다.
+[장점]
+- RDBMS가 아닌 BigQuery를 사용함으로써 비용을 절감할 수 있습니다.
+- 요구사항에 맞춘 테이블을 설계함으로써 쿼리 지연 속도를 줄일 수 있습니다.
+- 기존에 Pub/Sub에 쌓이던 auditlog를 사용하기 때문에 API 서버에서 추가할 작업이 없기 떄문에 리소스가 필요하지 않습니다.
+- 데이터 변경 감지, 데이터 처리, 데이터 저장 각 단계가 명확히 분리되어 있어 독립적으로 관리할 수 있습니다.
 
-기존에 Pub/Sub에 쌓이던 auditlog를 사용하기 때문에 API 서버에서 추가할 작업이 없기 떄문에 많은 리소스가 필요하지 않습니다.
+[단점]
+- Google Functions 의 추가 구현이 필요하며, 명확한 버전 관리가 필요합니다.
+- 데이터 일관성 문제나 데이터 손실 가능성을 고려한 설계가 필요합니다.
+- 파이프라인에서 발생할 수 있는 오류를 실시간으로 감지하고 대응할 수 있는 모니터링 체계가 필요합니다.
+
