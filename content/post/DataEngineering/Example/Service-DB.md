@@ -139,11 +139,44 @@ Google Cloud Pub/Sub과 같은 메시지 패싱 시스템을 사용하여 데이
 - AuditLog를 원천 데이터로 사용하기 때문에, API 서버에 문제가 발생할 경우 분석 데이터도 영향을 받습니다.
 - Google Functions의 추가 구현이 필요하며, 버전 관리도 필요합니다.
 
+## 5. CDC (Change Data Capture)
+### 5-1. Google DataStream
+Google Cloud에서 제공하는 서비스인 Data Stream을 사용하는 방식입니다. DataStream은 Change Data Capture (CDC) 기술을 사용하여 실시간으로 데이터베이스의 변경 사항을 추적하고,
+이를 대상으로 데이터를 다른 시스템으로 전송하는 기능을 제공합니다.Data Stream을 통해 PostgreSQL 데이터베이스의 변경 사항을 감지하고 이를 Google BigQuery로 복제할 수 있습니다.
+
+![image](https://github.com/user-attachments/assets/745b7243-6739-4669-8331-7f84bc21aaf6)
+
+[장점]
+- Google Cloud Console에서 추가 코드 작성 없이 설정을 통해 진행할 수 있습니다.
+- 실시간으로 데이터 변경 사항을 추적하기 때문에, 데이터 유실의 위험성이 적습니다.
+- Service DB의 데이터 변경 사항을 추적하기 때문에, 데이터 무결성이 깨지지 않습니다.
+- Google Cloud의 관리형 서비스로, 인프라 관리 부담이 적습니다.
+
+[단점]
+- Service DB의 데이터를 감지하여 Bigquery에 적재하는 방식이기 때문에 커스터마이징이 어렵습니다.
+  - 즉, Service DB의 테이블 형태 그대로 저장해야 합니다.
+
+### 5-2. Google Pub/Sub & Google Functions 
+Google Cloud Pub/Sub와 Google Functions를 사용하여 PostgreSQL의 데이터 변경 사항을 BigQuery로 스트리밍하는 방법입니다.
+PostgreSQL의 변경 사항을 Pub/Sub으로 메세지를 게시하여, 해당 메세지를 Google Functions를 통해 BigQuery에 적재하는 방식입니다.
+
+![image](https://github.com/user-attachments/assets/3635b73d-9dfb-45b4-a88c-8bfb1e482f0c)
+
+[장점]
+- 트리거와 함수 코드를 커스터마이징하여 특정 요구사항에 맞게 조정할 수 있습니다.
+- Service DB의 데이터 변경 사항을 추적하기 때문에, 데이터 무결성이 깨지지 않습니다.
+- Google Cloud의 관리형 서비스로, 인프라 관리 부담이 적습니다.
+
+[단점]
+- PostgreSQL에서 직접 트리거를 설정해야 합니다.
+- Google Functions의 추가 코드 작성이 필요합니다.
+- Google Pub/Sub 스키마 버전을 관리하지 않으면 스키마 불일치로 인한 오류가 발생할 수 있습니다.
+- Google Functions의 버전 관리를 위하여 배포 프로세스가 필요합니다.
+
 # 선정한 아키텍처
-분석 DB의 목적은 서비스 DB의 안전성을 해치지 않고 데이터 분석을 위한 것이기 때문에, 서비스 DB와 분리하지만 서비스 DB의 데이터를 원천으로 데이터 무결성이 깨지지 않아야 한다.
+분석 DB의 목적은 서비스 DB의 안전성을 해치지 않고 데이터 분석을 위한 것이기 때문에, 서비스 DB와 분리하지만 서비스 DB의 데이터를 원천으로 데이터 무결성이 깨지지 않아야 합니다.
+또한 해당 작업에 너무 많은 리소스가 투입되지 않기 위해서 선정한 아키텍처는 5-1 DataStream 입니다.
 
-따라서 선택한 최종 아키텍처는 2-1 Google Pub/Sub & BigQuery이다.
+![image](https://github.com/user-attachments/assets/745b7243-6739-4669-8331-7f84bc21aaf6)
 
-![image](https://github.com/yumin00/blog/assets/130362583/a8a18e8c-6cc6-4fb2-b221-a123475d2ceb)
-
-서비스 DB의 데이터를 Message로 받아 저장하는 방식이기 때문에 데이터 무결성을 지킬 수 있다. 또한, RDBMS가 아닌 BigQuery를 사용하기 때문에 금액적으로 큰 부담이 없다.
+서비스 DB의 데이터 변경 감지를 통해  BigQuery에 저장하는 방식이기 때문에 데이터 무결성을 지킬 수 있고, RDBMS가 아닌 BigQuery를 사용하기 때문에 금액적으로 큰 부담이 없습니다.
