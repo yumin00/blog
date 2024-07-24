@@ -1,7 +1,7 @@
 ---
 title: "파케이(Parquet)에 대해 알아보자"
 date: 2024-07-18T18:55:59+09:00
-draft: true
+draft: false
 categories :
 - DataEngineering
 ---
