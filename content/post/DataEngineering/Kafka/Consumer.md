@@ -66,3 +66,54 @@ key는 json, avro 등 여러 필드가 있는 복잡한 객체로 만들어 되�
 만약 4개의 파티션이 있고 4개의 consumer가 있는 consumer group이 있다고 가정해보자. 그러면 파티션과 consumer는 1:1 매칭이 되어 각자 메세지를 컨슘할 것이다.
 
 만약, 한 consumer에 오류가 발생하여 사라졌다면, 남아있는 consumer 중 하나가 해당 파티션의 메세지도 같이 컨슘하게 된다. 이를 Consuemr Rebalancing이라고 한다.
+
+### consumer load balancing
+로드밸런싱 된다. 한 파티션 당 하나의 컨슈머
+
+### Partition assignment
+파티션을 컨슈머 쪽으로 어떻게 할당할거냐? 
+
+### consumer group coordination
+그룹 코디네이터는 하나의 브로커가 담당함 코드네이터와 그룹 리더가 상호작용하여 어떤 파티션에 매핑할지 결정함.
+
+consumer_offsets이라는 토픽에는 디폴트로    50개의 파티션이 있는데, 이 파티션들도 브로커에 분산되어 있다.
+
+컨슈머 그룹내의 컨슈머들의 모든 오프셋은 컨슈머 오프셋 토픽의 하나의 파티션에 저장이되는데, 해당 파티션의 리더를 가지고 잇는 브로커가 코더네이터가 됨.
+
+왜 그룹 코디네이터가 안하고, 그룹 리더가 결정하지?
+
+컨슈머 리밸런싱: 파티션 할당받고,,등등 다시 일어나는 거를 리밸런싱
+
+### 컨슈머 하트비츠
+max.poll.interval.ms
+하트비트는 보내는데, 폴이 너무 오래 걸리면, 5분을 넘어서면 문제가 있다고 판단함.
+
+### 과도한 리밸런싱을 피하는 방법 (성능 최적화)
+rejoin: 특정 그룹 인스턴스 아이디를 가지고 있는 클라이어트가 빠졌다가 다시 붙을 때는 리밸런스 안하고 그냥 붙게 해줌
+
+session.timeout.ms를 gorup.min.session.timeout.ms와 group.max.session.timout 사이값으로 설정하면 좋음
+
+너무 크면 장애 인지를 못함 (max.poo..interval.ms)
+
+성능 테스트를 통해 적정값을 찾아가는 것이 중요함.
+
+
+
+# 파티션 어사인먼트 스트레티지
+같은 딜리버리 키를 가지고 데이터를 땡겨갈 수 있음.
+
+스티키
+: 기존 할당을 유지하고 나머지 부분만 재할당
+
+
+# consume rebalancing process(파티션 할당 과정)
+이때 리더는 제일 먼저 joinGroup 요청ㅇ을 보낸 컨슈머가 리더
+
+## eager rebalancing 프로토콜
+조인그룹을 요청하는 순간 파티션 취소하고 컨슘을 멈춤
+할당이 이뤄져야 다시 할당
+
+## incremental cooperative rebalancing protocol
+정말 빠질 파티션만 revoke
+
+실제 구현 ㅏ방식: copperative sticky assignor
