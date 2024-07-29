@@ -75,3 +75,23 @@ Partitioner의 전재 조건은 key가 null이 아닐 경우이다. key가 null�
 sticky 정책이란, 한 파티션의 한 배치가 닫힐 때까지 한 파티션에만 보내고, 해당 파티션의 배치가 다 차면 랜덤으로 다른 파티션에 보내는 것이다.
 
 Partitioner는 개발을 통해 직접 customizing이 가능하다.
+
+
+프로듀서는 카프카가 메시지를 잘 전달받았는지 어떻게 알 수 있을까?
+producer acks
+0: 메시지 유실이 발생할 수 있음
+1: 디폴트값, 
+-1: replica까지 다 확인해야해서 시간이 오래 걸림, 
+
+retry
+
+batch 처리
+
+devlivery timeout
+
+messgae send 순서 보장
+배치 0번 에러 나면 그 뒤 배치도 등록 안되게 할 수 있음
+
+page cahce 와 flush
+
+# delivery semantics
