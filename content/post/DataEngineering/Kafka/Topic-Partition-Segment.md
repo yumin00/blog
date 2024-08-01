@@ -87,3 +87,11 @@ producer가 메시지를 프로듀스하면 받아서 저장하고, consumer가 
 
 브로커 노드 안에 파티션들이 만들어져 있는데, 파티션 당 오직 하나의 segment가 활성화되어 있다.
 
+# Log File
+
+## log file delete
+왜 segement file을 삭제해야하지.? (왜 log 파일을 삭제해야하지?, 로그 파일에는 정확히 어떤 값들이 들어있지? 데이터는 안 들어 있니?)
+
+1. head의 데이터를 Offset map으로 만듦
+
+## 로그 파일 관리
