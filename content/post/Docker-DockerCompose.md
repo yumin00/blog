@@ -68,7 +68,6 @@ services: // 서비스 정의
       - ./server-proto/proto/auth/auth.swagger.json:/swagger.json // 컨테이너에 주입할 데이터 정의
     environment:
       SWAGGER_JSON: /swagger.json // 환경 변수 지정
-
 ```
 - `image`: 이미지는 도커에 이미 정의된 swaggerapi/swagger-ui 라는 이미지를 사용한다.
 - `volumes`: Swagger UI에 주입할 데이터는 미리 정의해놓은 swagger json 파일을 사용하고자 한다.
@@ -88,4 +87,23 @@ services:
     ports:
       - "8080:8080"
 ```
-- `ports`: Swagger UI를 통해 서버가 호출되어야 하기 때문에, Swagger UI에서 정의된 URL에 맞춰 호스트 포트를 정의한다. 
+- `ports`: Swagger UI를 통해 서버가 호출되어야 하기 때문에, Swagger UI에서 정의된 URL에 맞춰 호스트 포트를 정의한다.
+
+### db
+```yaml
+version: '3'
+services:
+  mysql:
+    image: mysql:8
+    restart: always
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+    env_file:
+      - app.env
+    volumes:
+      - ./db/mysql/data:/var/lib/mysql
+      - ./db/mysql/init:/docker-entrypoint-initdb.d
+```
