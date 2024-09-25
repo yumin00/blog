@@ -10,7 +10,7 @@ categories :
 
 # 테라폼
 - 인프라를 코드로 관리하는 도구
-- HCL(HashiCorp Configuration Language) 이라는 테라폼의 고유한 언어를 사용하여 리소르를 생성할 수 있음
+- HCL(HashiCorp Configuration Language) 이라는 테라폼의 고유한 언어를 사용하여 리소스를 생성할 수 있음
 - 테라폼은 현재 인프라 상태를 추적하여, 변경된 부분만 효율적으로 업데이트할 수 있음
 - 인프라 코드를 모듈화하여 재사용할 수 있도록 지원
 - `terraform plan`: 변경 사항을 미리 확인
@@ -64,6 +64,25 @@ EOF
 ![image](https://github.com/user-attachments/assets/092d3249-6a60-49ad-a455-68947d846a4c)
 
 사진과 같이 현재 인프라 상태와 변경하고자 하는 상태의 다른점을 확인할 수 있다.
+
+### 참고: `variables.tf`
+이때 `variables.tf` 라는 파일을 통해 variable들을 파일로 관리할 수 있다. 위와 같이 `var.project`를 사용하면 shell에서 직접 값을 입력하는데 이 방버의 단점은 값이 휘발된단느 것이다.
+
+```
+variable "project" {
+  type = string
+  default = "my-project"
+}
+```
+
+위와 같이 값을 미리 설정하면 파일을 통해 변수 값들을 관리할 수 있다. 즉, `variables.tf` 를 통해
+- 코드 재사용성이 높아지고,
+- 유지보수성이 강화되며,
+- 안전성과 유연성이 증가해 IaC에서 더욱 효율적이고 안전한 인프라 관리를 할 수 있다!
+
+> ✳️ IaC(Infrastructure as Code)
+> 
+> 인프라를 코드로 정의하고 자동화하여 설정, 배포, 관리를 일관되게 처리하는 방식
 
 ## 3. 적용 `terraform apply`
 생성한 플랜을 바탕으로 실제 인프라에 적용하는 단계이다.
