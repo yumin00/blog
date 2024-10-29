@@ -27,7 +27,7 @@ params:
   sidebar:
     compact: false
     emoji: 🐶
-    subtitle: DataEngineer
+    subtitle: Software Engineer
     avatar:
       enabled: true
       local: true
@@ -183,7 +183,7 @@ menu:
 
     - identifier: Search
       name: Search
-      url: /
+      url: https://yumin.dev/search/?keyword=
       weight: -100
       params:
         icon: search
@@ -191,7 +191,7 @@ menu:
 
     - identifier: Github
       name: Github
-      url: /
+      url: https://github.com/yumin00
       weight: -100
       params:
         icon: brand-github

@@ -1,0 +1,7 @@
+User-agent: *
+
+Disallow: /categories/
+Disallow: /archives/
+Disallow: 404.html
+
+Sitemap: {{ "sitemap.xml" | absLangURL }}
