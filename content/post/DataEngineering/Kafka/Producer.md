@@ -43,7 +43,7 @@ Consumer가 컨슘할 때는 deserializers를 사용하여 데이터를 뽑을 �
 ![image](https://github.com/yumin00/blog/assets/130362583/e24cb50b-b799-49dd-a730-38e5f91a4c77)
 
 1. 메시지를 produce하기 위해서는 Producer Record를 생성해야 한다.
-Producer Record : Topic / Partition / Timestamp / Key / Value / Header : topic, value는 필수
+- Producer Record : Topic / Partition / Timestamp / Key / Value / Header : **topic, value는 필수**
 
 2. 메시지 send()
 
@@ -54,6 +54,8 @@ Producer Record : Topic / Partition / Timestamp / Key / Value / Header : topic, 
 5. compress option: 압축 옵션을 썼으면 압축 여부 결정된다.
 
 6. RecordAccumulator 에서 데이터를 묶음 형태로 모아진다.
+- 데이터를 묶음형태로 모으는 역할. 실제로는 모였다가 한번에 bulk로 카프카로 전송됨
+- 이때 bulk 옵션도 따로 설정할 수 있음
 
 7. 옵션에 따라서, 단건 or 설정한 개수 / 시간에 맞춰서 카프카로 전송된다.
 
@@ -66,7 +68,7 @@ Producer Record : Topic / Partition / Timestamp / Key / Value / Header : topic, 
 ## Partitioner 역할
 메시지를 전송 받으면, 해당 메시지를 토픽 내의 파티션 중에 어떤 파티션에 보낼지 결정하는 역할을 한다.(Partitioner는 토픽 내에 몇 개의 파티션이 있는지 알고 있다)
 
-Partitioner의 전재 조건은 key가 null이 아닐 경우이다. key가 null이라면 Partitioner는 작동하지 않는다. 즉, key에 따라서 파티션이 나뉘어서 들어가지며 같은 key를 가진 메시지들은 같은 파티션에 적재된다고 할 수 있다.
+Partitioner의 전재 조건은 key가 null이 아닐 경우이다. key가 null이라면 Partitioner는 작동하지 않는다. 즉, key에 따라서 파티션이 나뉘어서 들어가지며 **같은 key를 가진 메시지들은 같은 파티션에 적재된다**고 할 수 있다.
 
 ```partition = hash(key) % number of parititons```
 
@@ -77,21 +79,41 @@ sticky 정책이란, 한 파티션의 한 배치가 닫힐 때까지 한 파티�
 Partitioner는 개발을 통해 직접 customizing이 가능하다.
 
 
-프로듀서는 카프카가 메시지를 잘 전달받았는지 어떻게 알 수 있을까?
-producer acks
-0: 메시지 유실이 발생할 수 있음
-1: 디폴트값, 
--1: replica까지 다 확인해야해서 시간이 오래 걸림, 
+## Producer는 카프카가 메시지를 잘 전달 받았는지 어떻게 알 수 있을까?
+### Producer Acks
+- 0
+  - ack가 필요하지 않은 경우
+  - 메시지 유실이 발생할 수 있음
+  - 자주 사용되지는 않지만, 메세지 손실이 있더라도 빠르게 메세지를 보내야하는 경우에 사용할 수 있다.
+- 1
+  - 디폴트값
+  - Leader가 메세지를 수신하면 Producer에게 ack를 보냄
+  - Follower가 복제하기 전에 Leader에 장애가 발생하면 메세지가 손실 될 수 있음
+  - 최대 한 번 전송을 보장
+- -1
+  - 모든 Replica까지 commit이 되면 Ack를 보냄
+  - replica까지 다 확인해야해서 시간이 오래 걸림
+  - 중복 데이터가 발생할 수 있음
+  - 최소 한 번 전송을 보장
 
-retry
+### Producer Batch 처리
+RecordAccumulator에서 데이터를 모은 다음에 한 번에 Kafka에 전송한다고 했다. 이러한 이유는 RPC 수를 줄여서 Broker가 처리하는 작업을 줄여 더 나은 처리량을 제공하기 위해서이다.
 
-batch 처리
+이때 옵션을 설정할 수 있다.
 
-devlivery timeout
+- linger.ms: 즉시 보냄.
+- batch.size: Batch 최대 크기 설정
 
-messgae send 순서 보장
-배치 0번 에러 나면 그 뒤 배치도 등록 안되게 할 수 있음
+일반적으로 linger.ms=100, batch.size=1000000 으로 설정하는 편이라고 한다.
 
-page cahce 와 flush
+## Message의 Send 순서 보장
+message를 send했다고 정말 전송됐다고 볼 수는 없다. 그렇다고 해서 계속해서 send를 하면 중복이 발생할 수도 있다.
+
+RecordAccumulator에서 5개의 메세지를 Broker에 전달한다고 가정해보자. 만약, Batch 0은 실패했지만 Batch 1이 성공했다면, Batch 1이 먼저 Commit되기 때문에 메세지 순서에서 문제가 발생할 수 있다.
+
+이러한 문제를 해결할 수 있는 방법이 바로 enable.idempotence이다. 이를 설정하면 Batch 가 실패하면 후속 Batch도 OutOfOrderSequenceException과 함께 같이 실패시킨다.
+
+## Page Cache와 Flush
+
 
 # delivery semantics
