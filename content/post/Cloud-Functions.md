@@ -31,7 +31,7 @@ Cloud Functions 배포 자동화 구축을 생각하면서 중요하게 생각�
 
 배포 프로세스 큰 틀에 대해서 먼저 고민했다.
 
-<img width="1038" alt="image" src="https://github.com/user-attachments/assets/5b9fed8b-6852-420e-a911-034098de72f2">
+![image](https://github.com/user-attachments/assets/9ee701f8-aafe-4f1f-a2f0-71e69896f7fb)
 
 이러한 구조를 생각해보았는데 요약하자면 다음과 같다. (진행할수록 생각한 것과 다르거나 보완하면 좋을 것들이 보여서 점점 개선해나갔다! 마지막에 최종 결과물이 함께 나온다 😀)
 
