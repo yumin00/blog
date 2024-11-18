@@ -274,7 +274,7 @@ resource "google_cloudfunctions2_function" "function" {
 
 ```terraform
 terraform {
-  source = "git::git@github.com:terraform-module-repo
+  source = "git::git@github.com:terraform-module-repo"
 }
 
 locals {
