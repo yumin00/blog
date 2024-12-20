@@ -34,33 +34,42 @@ Google Cloud의 내부 네트워크는 소켓 파일을 통해 받은 데이터�
 
 정리해보자면,
 
+![image](https://github.com/user-attachments/assets/c0a47d37-6cfc-4263-adf8-2eaa47f38ab1)
+
 1. Cloud Run 컨테이너 시작 시:
-- Cloud Run은 컨테이너가 시작되기 전에 `/cloudsql` 디렉터리를 컨테이너 파일 시스템에 마운트
-- Cloud SQL Auth Proxy 초기화
+- Cloud Run 인스턴스가 시작되면 /cloudsql/<INSTANCE_CONNECTION_NAME> 경로에 Unix 소켓 파일이 생성됨
+  - 소켓은 Proxy Client에 해당되며, 컨테이너 내부에서 애플리케이션과 Proxy가 통신하는 인터페이스이다.
 
-2. Unix 소켓 파일 생성
-- Cloud SQL Auth Proxy는 `/cloudsql/<INSTANCE_CONNECTION_NAME>` 경로에 Unix 도메인 소켓 파일 생성
-  - 이 소켓 파일은 실제 데이터가 저장된 파일이 아니라 Cloud SQL Auth Proxy와 통신하는 인터페이스
-- Cloud Run 서비스 계정의 IAM 권한을 확인하여 Cloud SQL에 연결할 수 있는 인증 설정
-- Proxy는 Google Cloud 내부 네트워크를 통해 지정된 Cloud SQL 인스턴스와 연결을 설정합니다.
+2. Proxy Client 초기화
+- Cloud SQL Auth Proxy가 컨테이너 내부에서 실행되며, 해당 소켓 파일을 통해 애플리케이션 요청을 수신할 준비를 함
+- Proxy Client는 Cloud Run 서비스 계정을 사용하여 Google Cloud에 인증을 진행한다.
 
-3. 데이터 요청:
-- Unix 소켓 파일에 데이터를 쓰면, Proxy가 이 데이터를 수신
-- Proxy는 데이터베이스 요청을 Google Cloud 네트워크를 통해 지정된 Cloud SQL 인스턴스로 전송
+3. Proxy Client와 Proxy Server 연결:
+- Proxy Client는 Google Cloud 네트워크를 통해 Cloud SQL의 Proxy Server와 보안 터널(TCP Secure Tunnel)을 설정한다.
+- 그림과 같이 TLS 암호화를 사용하여 안전하게 데이터를 주고받는다.
 
-4. Cloud SQL 처리:
+4. 데이터 요청:
+- Unix 소켓 파일에 데이터를 쓰면, Client Proxy가 이 데이터를 수신
+- Client Proxy는 데이터베이스 요청을 Google Cloud 네트워크를 통해 지정된 Cloud SQL Proxy Server로 전송
+- Proxy Server는 Proxy Client로부터 수신한 요청을 Cloud SQL 데이터베이스로 전달합니다.
+
+5. Cloud SQL 처리:
 - Proxy를 통해 전달된 요청은 Cloud SQL 인스턴스에서 처리
-- 처리된 결과는 Google Cloud 네트워크를 통해 다시 Proxy로 전달됩니다.
+- 처리된 결과를 Proxy Server에 전달하고, Google Cloud 네트워크를 통해 다시 Client Proxy로 전달된다.
 
-4. 응답 수신:
+6. 응답 수신:
 - 소켓 파일을 통해 응답 데이터를 받아 Cloud Run이 이를 처리한다.
-- Google Cloud는 /cloudsql 디렉터리를 컨테이너 내부에 마운트한다.
-- 사용자가 설정한 Cloud SQL 인스턴스(INSTANCE_CONNECTION_NAME)와 연결되는 Unix 도메인 소켓 파일을 `/cloudsql/<INSTANCE_CONNECTION_NAME>` 경로에 생성한다.
-- 컨테이너 내부에서 이 소켓 파일을 마치 로컬 파일처럼 접근하여 Cloud SQL과 통신할 수 있다.
-- 이 파일은 Cloud Run과 Google Cloud 관리형 네트워크를 연결하는 가상 통로 역할을 한다.
-- 로컬 파일처럼 보이지만, 이 소켓 파일은 실제 데이터 저장소가 아니며 Google Cloud 내부 네트워크와의 가상 연결이다.
 
 
 ### 장점
 - 네트워크를 타지 않기 때문에 데이터 전송이 더 빠르고 네트워크 오버헤드가 줄어든다는 장점이 있다.
-- Google Cloud의 내부 관리 네트워크를 통해 이루어지며 외부 네트워크(인터넷)를 사용하지 않아 데이터 보호 수준을 높일 수 있다.
+- TCP 주소나 포트 번호를 따로 관리하지 않아도 되며 단순히 Unix 파일 시스템 경로를 설정하면 되기 때문에 복잡성을 줄이고 설정 작업을 간소화할 수 있다.
+-  Unix 소켓 파일에 대한 접근은 컨테이너 내부의 파일 시스템 권한으로 제어되므로 불필요한 보안 위협이 줄어든다.
+
+### 단점
+- Cloud SQL의 연결 수에 제한이 있기 때문에 Cloud Run 인스턴스가 많이 스케일링 되면 연결 수가 초과될 수 있다.
+  - 연결 풀(pool)과 같은 관리가 제대로 이루어지지 않으면 연결이 끊기거나 연결 실패가 발생할 수 있다.
+
+실제로 다음과 같은 문제가 발생했었다.
+
+
