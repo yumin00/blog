@@ -1,7 +1,7 @@
 ---
 title: "Docker와 Docker Compose"
 date: 2024-01-25T19:20:28+09:00
-draft: true
+draft: false
 ---
 
 Docker와 Docker Compose에 대해 알아보자
