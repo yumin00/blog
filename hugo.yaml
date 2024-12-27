@@ -15,7 +15,7 @@ params:
   featuredImageField: image
   rssFullContent: true
   favicon:
-
+    icon: favicon.ico
   footer:
     since:
     customText:
