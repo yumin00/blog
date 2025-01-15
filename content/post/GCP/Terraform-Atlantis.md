@@ -1,5 +1,5 @@
 ---
-title: "Atlantis의 동작 방식에 대해 알아보자"
+title: "Atlantis: 등장 배경부터 동장 방식까지"
 date: 2024-12-27T19:06:20+09:00
 draft: false
 categories :
