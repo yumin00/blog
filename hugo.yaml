@@ -14,8 +14,7 @@ params:
     - post
   featuredImageField: image
   rssFullContent: true
-  favicon:
-    icon: favicon.ico
+  favicon: favicon-32x32.png
   footer:
     since:
     customText:
@@ -153,7 +152,6 @@ params:
       enabled: true
     content:
       enabled: true
-
 
 menu:
   main:
