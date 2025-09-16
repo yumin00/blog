@@ -168,7 +168,6 @@ menu:
       weight: -100
       params:
         icon: user
-        newTab: true
 
     - identifier: Search
       name: Search
