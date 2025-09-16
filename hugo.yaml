@@ -161,22 +161,13 @@ menu:
       weight: -100
       params:
         icon: home
-        newTab: true
 
     - identifier: About
       name: About
-      url: /
+      url: /about/
       weight: -100
       params:
         icon: user
-        newTab: true
-
-    - identifier: Archives
-      name: Archives
-      url: /
-      weight: -100
-      params:
-        icon: archives
         newTab: true
 
     - identifier: Search
@@ -185,7 +176,6 @@ menu:
       weight: -100
       params:
         icon: search
-        newTab: true
 
     - identifier: Github
       name: Github
