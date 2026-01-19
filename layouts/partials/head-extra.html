@@ -13,8 +13,15 @@
 <!-- Mermaid.js for diagram rendering -->
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  
+  // 다크모드 감지
+  const isDarkMode = document.documentElement.dataset.scheme === 'dark' || 
+                     (document.documentElement.dataset.scheme === 'auto' && 
+                      window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
   mermaid.initialize({ 
     startOnLoad: true,
-    theme: 'default'
+    theme: isDarkMode ? 'dark' : 'default',
+    securityLevel: 'loose'
   });
 </script>
