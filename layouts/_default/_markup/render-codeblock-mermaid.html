@@ -1,12 +1,4 @@
-{{- /*
-  Hugo render hook for fenced code blocks:
-  ```mermaid
-  ...
-  ```
-
-  This converts mermaid code fences into HTML that Mermaid.js can render.
-*/ -}}
-
-{{- $diagram := .Inner | strings.TrimSpace -}}
-
-<pre class="mermaid">{{ $diagram | safeHTML }}</pre>
+{{- .Page.Store.Set "hasMermaid" true -}}
+<div class="mermaid">
+{{- .Inner | safeHTML -}}
+</div>
