@@ -9,6 +9,11 @@ module:
     extended: true
     min: "0.87.0"
 
+outputs:
+  page:
+    - html
+    - json
+
 params:
   mainSections:
     - post
