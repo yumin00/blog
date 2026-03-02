@@ -1099,29 +1099,30 @@ Cloud Run에서 실시간 통신이 필요하다면, **HTTP Streaming이 가장 
 
 ---
 
-# 12. Deep Dive: 다중 인스턴스에서 실시간 세션 관리 - Redis Pub/Sub 적용
+# 12. Deep Dive: 서버리스 환경에서 실시간 세션 관리 - Redis Pub/Sub 적용
 
 11장의 이슈 4에서 **인스턴스 간 상태 공유 불가** 문제를 간단히 다뤘다. 이번에는 실제로 이 문제를 어떻게 해결했는지, 구체적인 아키텍처를 살펴보자.
 
 ## 문제 상황: "왜 메시지가 안 와요?"
 
-Streamable HTTP(HTTP POST + SSE 결합) 방식으로 서버→클라이언트 실시간 메시지를 구현했다. 로컬에서는 완벽하게 동작했지만, **다중 인스턴스로 배포하자마자** 메시지가 간헐적으로 전달되지 않는 현상이 발생했다.
+Streamable HTTP(HTTP POST + SSE 결합) 방식으로 서버→클라이언트 실시간 메시지를 구현했다. 로컬에서는 완벽하게 동작했지만, **서버리스 환경에 배포하자마자** 메시지가 간헐적으로 전달되지 않는 현상이 발생했다.
 
-## 왜 다중 인스턴스에서 세션이 깨지는가?
+## 왜 서버리스 환경에서 세션이 깨지는가?
 
 실시간 메시지 전송의 핵심은 **서버가 사용자의 세션 정보를 메모리에 유지하고 있어야 한다**는 것이다.
 
 ```mermaid
-flowchart LR
-    User["User A"] -->|"1. Session ID 발급 요청"| Server["서버"]
-    Server -->|"2. Session ID 반환"| User
-    User -->|"3. Session ID로 세션 등록 (SSE 연결)"| Server
-    Server -->|"4. 메시지 푸시"| User
+sequenceDiagram
+    participant User as User A
+    participant Server as 서버
 
-    style Server fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    User->>Server: 1. Session ID 발급 요청
+    Server-->>User: 2. Session ID 반환
+    User->>Server: 3. Session ID로 세션 등록 (SSE 연결)
+    Server-->>User: 4. 메시지 푸시
 ```
 
-인스턴스가 하나일 때는 문제 없다. 하지만 Cloud Run처럼 **다중 인스턴스 + 이벤트 기반 아키텍처**에서는:
+인스턴스가 하나일 때는 문제 없다. 하지만 Cloud Run처럼 **서버리스 환경**에서는:
 
 ```mermaid
 flowchart RL
