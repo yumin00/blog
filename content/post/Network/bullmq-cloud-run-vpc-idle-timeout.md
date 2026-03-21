@@ -13,6 +13,11 @@ BullMQ로 예약 작업(delayed job)을 구현했는데, delay가 짧으면 잘 
 
 <!--more-->
 
+> **이 글에서 다루는 내용**
+>
+> BullMQ delayed job이 간헐적으로 실행되지 않는 문제를 추적하며 발견한 세 가지 함정.
+> 네트워크(VPC), 런타임(Cloud Run), 애플리케이션(큐 설계) — 각각 다른 레이어에서 동시에 발생한 문제를 하나씩 풀어간다.
+
 ---
 
 ## 아키텍처 개요
@@ -647,6 +652,7 @@ Cloud Run에서 백그라운드 프로세스(Worker, cron, WebSocket 등)를 돌
 - **큐/토픽 이름을 하드코딩하지 않고 환경변수로 주입하는 패턴을 표준화한다** — 공유 라이브러리에서 상수 하드코딩 금지
 - **네이밍 규칙을 문서화한다** — `{서비스명}-{용도}` 형식으로 prefix 규칙 수립 (예: `scheduled-push-sleep`, `scheduled-push-metabolic`)
 - **공유 인프라 리소스 목록을 팀 내부에 공유한다** — 어떤 서비스가 어떤 Redis/큐를 사용하는지 한눈에 볼 수 있는 문서를 관리한다. Kafka의 schema registry처럼, 팀 내부에서 큐/토픽 네이밍을 중앙에서 관리하는 체계가 있으면 이런 충돌을 사전에 방지할 수 있다.
+- **인프라 아키텍처를 가시화한다** — 이번 문제의 본질은 "누가 뭘 쓰는지 아무도 몰랐다"는 것이다. 서비스가 늘어나고 개발자가 바뀌면, 머릿속에만 있던 아키텍처는 사라진다. 수동 문서는 그린 순간부터 낡기 시작하므로, Terragrunt 설정이나 GCP API 호출을 통해 서비스 간 의존 관계와 공유 인프라 매핑을 **자동으로 추출하고 지속적으로 업데이트되는 아키텍처 다이어그램**을 구축하는 것이 이상적이다.
 
 ---
 
@@ -669,29 +675,38 @@ flowchart LR
 
 Cloud Run은 VPC **외부**에서 실행되므로 VPC Connector를 경유해야 한다.
 
-**AWS — ECS Fargate + ElastiCache Redis:**
+**AWS — Lambda + ElastiCache Redis:**
 
 ```mermaid
 flowchart LR
-    Fargate["ECS Fargate<br/>(VPC 내부)"] -->|"TCP (직접 통신)"| Redis_AWS["ElastiCache Redis<br/>(같은 VPC)"]
+    Lambda["AWS Lambda<br/>(VPC 설정 시 ENI로 연결)"] -->|"TCP (ENI 직접 통신)"| Redis_AWS["ElastiCache Redis<br/>(같은 VPC)"]
 
-    style Fargate fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Lambda fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
     style Redis_AWS fill:#ffebee,stroke:#c62828,stroke-width:2px
 ```
 
-ECS Fargate는 VPC **내부** 서브넷에 직접 배치된다. 중간자(VPC Connector)가 없으므로 Fargate와 Redis가 같은 VPC에서 직접 통신한다.
+Lambda는 VPC 설정 시 **ENI(Elastic Network Interface)**를 통해 VPC 서브넷에 직접 연결된다. GCP의 VPC Connector 같은 중간자가 아니라, Lambda 함수에 네트워크 인터페이스가 직접 할당되는 방식이다.
 
 ### 세 가지 문제가 AWS에서도 발생하는가?
 
-| # | 문제 | GCP (Cloud Run) | AWS (ECS Fargate) |
-|---|------|-----------------|-------------------|
-| 1 | **VPC idle timeout** | 발생 — VPC Connector가 10분 idle 시 연결을 끊음 | **발생 안 함** — 중간자가 없고 같은 VPC에서 직접 통신 |
-| 2 | **cpu_idle** | 발생 — 요청 없으면 CPU 회수 | **발생 안 함** — Fargate Task는 실행 중이면 항상 CPU 할당 |
+| # | 문제 | GCP (Cloud Run) | AWS (Lambda) |
+|---|------|-----------------|--------------|
+| 1 | **VPC idle timeout** | 발생 — VPC Connector가 10분 idle 시 연결을 끊음 | **중간자 timeout은 없음** — Hyperplane ENI로 VPC에 직접 연결되어 GCP VPC Connector 같은 중간자가 없음. 다만 Lambda 자체의 idle 연결 제거 메커니즘이 존재 |
+| 2 | **cpu_idle** | 발생 — 요청 없으면 CPU 회수 | **다른 형태로 발생** — Lambda는 호출 시에만 실행되고 최대 15분 제한. 상시 polling이 불가능하므로 BullMQ Worker 패턴 자체가 맞지 않음 |
 | 3 | **큐 이름 충돌** | 발생 | **동일하게 발생** — 클라우드와 무관한 애플리케이션 레벨 문제 |
 
-AWS ECS Fargate + ElastiCache 조합에서는 1번과 2번이 **구조적으로 발생하지 않는다**. Fargate는 VPC 안에 있어 중간자가 필요 없고, 실행 중에는 항상 CPU가 할당된다. 3번(큐 이름 충돌)만 동일하게 주의하면 된다.
+1번(VPC idle timeout)에서 GCP VPC Connector 같은 중간자 timeout은 Lambda에서 발생하지 않는다. 하지만 Lambda에는 별도의 연결 관리 이슈가 있다. AWS 공식 문서에 따르면:
+
+> "Lambda purges idle connections over time. Attempting to reuse an idle connection when invoking a function will result in a connection error."
+> — [AWS Lambda Best Practices](https://docs.aws.amazon.com/lambda/latest/dg/best-practices.html)
+
+Lambda는 호출 사이에 실행 환경을 **freeze**한다. 이때 보유하고 있던 TCP 연결이 idle 상태로 남게 되고, 시간이 지나면 Lambda가 이 연결을 제거한다. 다음 호출에서 제거된 연결을 재사용하려고 하면 에러가 발생한다. 따라서 Lambda에서도 **연결 재사용 전 유효성 검사**나 **keepAlive 설정**은 여전히 권장된다.
+
+한편, ElastiCache Redis의 서버측 idle timeout(`timeout` 파라미터)은 **기본값이 0(idle 연결을 끊지 않음)**이므로, 명시적으로 설정하지 않는 한 서버측에서 연결을 끊는 문제는 발생하지 않는다.
+
+2번은 **더 근본적인 제약**이 된다. Lambda는 이벤트 기반으로 호출될 때만 실행되고 최대 15분까지만 동작하므로, BullMQ Worker처럼 상시 Redis를 polling하는 패턴에는 적합하지 않다. Lambda에서 delayed job을 구현하려면 BullMQ 대신 **EventBridge Scheduler**나 **SQS delay** 같은 AWS 네이티브 서비스를 사용하는 것이 일반적이다.
 
 ### 다만 AWS에서도 주의할 점
 
-- **NAT Gateway idle timeout**: Fargate가 VPC **외부**(인터넷)로 나갈 때 NAT Gateway를 경유하는데, **350초(약 5분 50초)** idle timeout이 있다. ElastiCache처럼 같은 VPC 안의 리소스에 접근할 때는 해당 없지만, 외부 Redis(예: Redis Cloud)를 사용하면 비슷한 문제가 발생할 수 있다.
-- **AWS App Runner**: Cloud Run과 유사한 서버리스 모델이다. App Runner도 VPC Connector를 사용하므로, GCP와 **동일한 idle timeout 문제가 발생**할 수 있다. 서버리스 컨테이너 서비스를 사용한다면 클라우드와 무관하게 VPC Connector 경유 여부를 확인해야 한다.
+- **NAT Gateway idle timeout**: Lambda가 VPC **외부**(인터넷)로 나갈 때 NAT Gateway를 경유하는데, **350초(약 5분 50초)** idle timeout이 있다. ElastiCache처럼 같은 VPC 안의 리소스에 접근할 때는 해당 없지만, 외부 Redis(예: Redis Cloud)를 사용하면 비슷한 문제가 발생할 수 있다.
+- **AWS App Runner**: Cloud Run과 유사한 서버리스 컨테이너 모델이다. App Runner도 VPC Connector를 사용하므로, GCP와 **동일한 idle timeout 문제가 발생**할 수 있다.
