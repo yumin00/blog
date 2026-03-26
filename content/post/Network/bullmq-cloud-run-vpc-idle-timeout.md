@@ -54,6 +54,18 @@ flowchart LR
 | **VPC Connector** | VPC 외부(Cloud Run)와 VPC 내부(Redis)를 연결하는 브릿지. Cloud Run이 Redis에 접근하려면 반드시 이 Connector를 경유해야 한다. |
 | **Memorystore Redis** | GCP에서 관리하는 Redis 인스턴스. VPC 내부에 위치하며, BullMQ의 잡 저장소로 사용한다. |
 
+### 왜 VPC Connector가 필요한가?
+
+Cloud Run이 Redis에 직접 접근하지 못하는 이유는 **네트워크 격리** 때문이다.
+
+1. **Memorystore Redis는 VPC 내부에만 존재한다** — GCP Memorystore Redis는 보안상 VPC(사설 네트워크) 안에서만 접근 가능하도록 설계되어 있다. 공인 IP가 없고, 내부 IP만 가진다.
+2. **Cloud Run은 기본적으로 VPC 외부에서 실행된다** — Cloud Run은 Google이 관리하는 서버리스 인프라 위에서 돌아가며, 이 인프라는 사용자의 VPC 네트워크에 속해 있지 않다. 즉, Cloud Run 컨테이너의 네트워크와 Redis가 있는 VPC 네트워크는 서로 다른 네트워크다.
+3. **VPC Connector가 브릿지 역할을 한다** — 서로 다른 두 네트워크를 연결해주는 다리다. Cloud Run의 트래픽을 VPC Connector를 통해 VPC 내부로 라우팅해준다.
+
+비유하자면, Redis는 **사설 건물 안에 있는 서버실**이고, Cloud Run은 **건물 밖에 있는 외부 서비스**다. 건물에 들어가려면 **출입 게이트(VPC Connector)**를 통과해야 하는 것과 같다.
+
+> 참고로 GCP에서는 VPC Connector 대신 **Direct VPC Egress**라는 더 새로운 방식도 제공한다. Cloud Run 인스턴스를 VPC 서브넷에 직접 배치하는 방식으로, Connector 없이도 VPC 리소스에 접근할 수 있다.
+
 이 글에서 다루는 문제는 **Cloud Run → VPC Connector → Redis** 사이의 TCP 연결에서 발생한다.
 
 ---
@@ -159,7 +171,7 @@ Cloud Run에서 Memorystore Redis에 접근하려면 **VPC Connector**를 경유
 
 ### 가설 수립
 
-5분 delay는 성공하고, 46분이나 2시간 delay는 실패한다. "특정 시간을 넘기면 실패한다"는 패턴이 보였다. 시간 기반 제한이 있는 무언가가 연결을 끊고 있다는 뜻이다.
+5분 delay는 성공하고, 46분이나 2시간과 같이 그 이후의 delay는 실패한다. "특정 시간을 넘기면 실패한다"는 패턴이 보였다. 시간 기반 제한이 있는 무언가가 연결을 끊고 있다는 뜻이다.
 
 Cloud Run과 Redis 사이에는 VPC Connector가 있다. GCP 문서를 확인해보니, VPC Connector에는 **약 10분의 idle TCP timeout**이 존재했다. 5분은 10분 미만이라 통과하고, 46분이나 2시간은 한참 넘으니 끊기는 것 — 설명이 되는 가설이었다.
 
@@ -204,7 +216,11 @@ flowchart LR
 
 ### VPC Connector는 "중간자"다
 
-문제는 VPC Connector가 NAT(Network Address Translation) 장비처럼 동작한다는 점이다. Cloud Run은 VPC 외부에 있고, Redis는 VPC 내부에 있으므로, VPC Connector가 중간에서 **연결 추적 테이블(conntrack table)**을 유지한다:
+문제는 VPC Connector가 NAT(Network Address Translation) 장비처럼 동작한다는 점이다. Cloud Run은 VPC 외부에 있고, Redis는 VPC 내부에 있으므로, VPC Connector가 중간에서 **연결 추적 테이블(conntrack table)**을 유지한다.
+
+> **conntrack table이란?**
+>
+> 흔히 혼동하는 개념이 있다. **iptables**는 "어떤 트래픽을 허용/차단할지"의 **규칙(rule)**이고, **conntrack table**은 "지금 어떤 연결이 실제로 살아있는지"의 **상태(state)**다. VPC Connector가 idle timeout으로 삭제하는 것은 iptables 규칙이 아니라, conntrack table의 특정 엔트리다. 즉, "이 출발지-목적지 쌍의 연결이 존재한다"는 매핑 정보를 지우는 것이다. 엔트리가 삭제되면, 이후 해당 연결로 들어오는 패킷은 VPC Connector 입장에서 "모르는 연결"이 되어 DROP된다.
 
 ```mermaid
 flowchart LR
@@ -264,7 +280,7 @@ sequenceDiagram
     Note over A,B: 양쪽 다 CLOSED 상태로 전환<br/>애플리케이션이 "연결 끊김"을 감지할 수 있음
 ```
 
-**VPC Connector의 조용한 끊김:**
+**VPC Connector의 끊김:**
 ```mermaid
 sequenceDiagram
     participant W as Worker
@@ -276,6 +292,17 @@ sequenceDiagram
     Note over W: FIN/RST 수신 없음<br/>여전히 ESTABLISHED라고 믿음
     Note over R: FIN/RST 수신 없음<br/>여전히 ESTABLISHED라고 믿음
 ```
+
+> **실제로는 항상 "조용한" 것은 아니다**
+>
+> GCP 공식 문서는 conntrack 엔트리 삭제 후 패킷이 **DROP(무시)**되는지 **RST(즉시 에러)**로 응답하는지 명시하지 않는다. 실제 운영 환경의 로그를 확인해보면 `read ECONNRESET`(RST 수신)이 즉시 발생하여 빠르게 reconnect되는 사례가 관찰된다. 이 경우 아래에서 설명하는 "13~20분 hang"은 발생하지 않고, 즉시 에러 → reconnect로 이어진다.
+>
+> 다만 **RST가 항상 보장되는 것은 아니다**. DROP으로 동작하면 아래의 worst case 시나리오가 발생하므로, 어느 쪽이든 keepAlive로 연결을 유지하는 것이 안전한 방어다.
+>
+> | VPC Connector 동작 | 결과 | 실제 영향 |
+> |-------------------|------|----------|
+> | **RST 응답** | `ECONNRESET` 즉시 발생 → reconnect | 해당 요청만 실패, 수 초 내 복구 |
+> | **DROP (무시)** | 커널 재전송 13~20분 → `ETIMEDOUT` | 수십 분 hang (worst case) |
 
 ### 끊긴 후 어떤 일이 벌어지나
 
@@ -332,7 +359,11 @@ sequenceDiagram
 | **subscriber** | pub/sub 이벤트 대기 | 높음 (이벤트 없으면 idle) |
 | **client** | 일반 명령 | 높음 (트래픽 없으면 idle) |
 
-blocking 연결은 짧은 timeout으로 반복 호출되므로 idle timeout에 잘 걸리지 않는다. 하지만 subscriber나 client 연결이 끊어지면 delayed job 알림 수신이나 상태 조회에 문제가 생길 수 있다. keepAlive는 **모든 연결**에 적용되므로, 이런 부분적 연결 끊김도 방지한다.
+blocking 연결은 짧은 timeout으로 반복 호출되므로 idle timeout에 잘 걸리지 않는다. 즉, **BullMQ의 핵심 잡 처리 연결은 keepAlive 없이도 VPC idle timeout에 걸리지 않을 가능성이 높다**. 하지만 subscriber나 client 연결이 끊어지면 delayed job 알림 수신이나 상태 조회에 문제가 생길 수 있다. keepAlive는 **모든 연결**에 적용되므로, 이런 부분적 연결 끊김을 방어한다.
+
+> **keepAlive는 "근본 해결"이 아닌 "방어적 설정"이다**
+>
+> 이후 섹션에서 밝혀지지만, delayed job이 실행되지 않는 직접적 원인은 keepAlive 부재가 아니라 **cpu_idle에 의한 CPU 회수**와 **큐 이름 충돌**이었다. keepAlive는 VPC 환경에서 장시간 TCP 연결을 유지하는 서비스라면 **반드시 적용해야 하는 best practice**이지만, 이 케이스에서 delayed job 실패를 직접 일으킨 원인은 아니었다.
 
 ### 대응: TCP KeepAlive 설정
 
@@ -367,15 +398,15 @@ const redisOptions = {
   host: 'redis-host',
   port: 6379,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 30000, // 30초마다 keepalive probe
+  keepAliveInitialDelay: 30000, // 마지막 데이터 전송 후 30초간 통신 없으면 keepalive probe 시작
 };
 ```
 
 VPC Connector의 idle timeout(~10분)보다 훨씬 짧은 간격이므로, 연결이 끊어지는 일을 방지할 수 있다.
 
-keepAlive를 적용하고 배포한 뒤 모니터링했다. 이 수정 자체는 필요했다 — keepAlive 없이는 장시간 idle 시 TCP 연결이 조용히 끊어져 잡 실행이 수십 분 지연될 수 있다. 하지만 **여전히 간헐적으로 잡이 실행되지 않았다**. keepAlive만으로는 부족했다.
+keepAlive를 적용하고 배포한 뒤 모니터링했다. VPC 환경에서 장시간 TCP 연결을 유지하는 서비스라면 keepAlive는 반드시 적용해야 하는 설정이다. 하지만 **여전히 간헐적으로 잡이 실행되지 않았다**. keepAlive만으로는 부족했다 — 사실 BullMQ의 핵심 연결(blocking)은 자체적으로 idle 상태가 되지 않으므로, delayed job 실패의 직접적 원인은 다른 곳에 있었다.
 
-> 이걸로 해결인 줄 알았다.
+> keepAlive는 적용했지만, 이걸로 해결되지 않은 건 어쩌면 당연했다.
 
 ---
 
@@ -602,28 +633,32 @@ flowchart TD
 
 BullMQ delayed job이 실행되지 않을 때, 세 가지 레이어를 모두 확인해야 한다:
 
-| # | 함정 | 증상 | 해결 |
-|---|------|------|------|
-| 1 | **VPC Connector idle timeout** | 10분 이상 idle 시 TCP 연결이 조용히 끊김 → Worker의 Redis 통신 지연 | `enableKeepAlive: true, keepAliveInitialDelay: 30000` |
-| 2 | **Cloud Run cpu_idle** | HTTP 요청 없으면 CPU 중단 → Worker와 keepalive 모두 멈춤 | `cpu_idle = false` |
-| 3 | **큐 이름 충돌** | 여러 서비스가 같은 큐를 공유 → 경쟁 소비로 잡 유실 | 서비스별 큐 이름 분리 |
+| # | 함정 | 증상 | 해결 | 영향도 |
+|---|------|------|------|--------|
+| 1 | **VPC Connector idle timeout** | 10분 이상 idle 시 TCP 연결이 끊김 → Redis 통신 일시 중단 | `enableKeepAlive: true, keepAliveInitialDelay: 30000` | 방어적 설정 |
+| 2 | **Cloud Run cpu_idle** | HTTP 요청 없으면 CPU 중단 → Worker와 keepalive 모두 멈춤 | `cpu_idle = false` | **근본 원인** |
+| 3 | **큐 이름 충돌** | 여러 서비스가 같은 큐를 공유 → 경쟁 소비로 잡 유실 | 서비스별 큐 이름 분리 | **근본 원인** |
 
-세 가지는 각각 다른 레이어의 문제이며, **모두 수정이 필요**하다. 어느 하나만 고쳐서는 해결되지 않는다:
+**근본 원인과 방어적 설정의 차이**:
+
+1번(keepAlive)은 VPC 환경에서 장시간 TCP 연결을 유지하는 모든 서비스에 **반드시 적용해야 하는 best practice**다. 하지만 이번 케이스에서 delayed job 실패를 직접 일으킨 원인은 아니었다. BullMQ Worker의 핵심 연결(blocking)은 수 초마다 `BRPOPLPUSH`를 반복하므로 VPC idle timeout(10분)에 걸리지 않는다. delayed job이 실행되지 않은 **직접적 원인**은 2번(CPU 회수로 Worker 전체가 frozen)과 3번(다른 서비스가 잡을 가져감)이었다.
+
+세 가지 수정의 조합 결과:
 
 | 수정한 것 | 빠뜨린 것 | 결과 |
 |----------|----------|------|
-| 3번(큐 이름)만 수정 | 1번, 2번 미수정 | 경쟁 소비는 해결되지만, cpu_idle로 Worker가 frozen → 잡 실행 지연 |
-| 1번(keepAlive) + 2번(cpu_idle)만 수정 | 3번 미수정 | 연결과 CPU는 정상이지만, 다른 서비스가 잡을 가져감 → 잡 유실 |
-| 1번(keepAlive) + 3번(큐 이름)만 수정 | 2번 미수정 | CPU가 없어 keepAlive도 polling도 멈춤 → 잡 실행 지연 |
-| **1번 + 2번 + 3번 모두 수정** | 없음 | **정상 동작** |
+| 3번(큐 이름)만 수정 | 2번 미수정 | 경쟁 소비는 해결되지만, cpu_idle로 Worker가 frozen → 잡 실행 지연 |
+| 2번(cpu_idle)만 수정 | 3번 미수정 | CPU는 정상이지만, 다른 서비스가 잡을 가져감 → 잡 유실 |
+| 2번(cpu_idle) + 3번(큐 이름) 수정 | 1번 미수정 | **delayed job은 정상 동작**. 다만 subscriber/client 연결이 idle 시 끊길 수 있음 |
+| **1번 + 2번 + 3번 모두 수정** | 없음 | **정상 동작 + 방어적 안전망 확보** |
 
 각 문제가 일으키는 증상도 다르다:
 
-- **1번 (네트워크)**: 잡이 유실되지는 않지만 **수십 분 지연**된다 — TCP 연결이 조용히 끊기고, 커널 재전송 타임아웃 후 reconnect
-- **2번 (런타임)**: 잡이 유실되지는 않지만 **다음 HTTP 요청이 올 때까지 무기한 지연**된다 — CPU가 없어 모든 백그라운드 작업 정지
-- **3번 (애플리케이션)**: 잡이 **완전히 유실**된다 — 다른 서비스가 가져가서 skip 처리하면 복구 불가
+- **2번 (런타임, 근본 원인)**: 잡이 유실되지는 않지만 **다음 HTTP 요청이 올 때까지 무기한 지연**된다 — CPU가 없어 모든 백그라운드 작업 정지
+- **3번 (애플리케이션, 근본 원인)**: 잡이 **완전히 유실**된다 — 다른 서비스가 가져가서 skip 처리하면 복구 불가
+- **1번 (네트워크, 방어적 설정)**: BullMQ의 blocking 연결은 영향받지 않으나, subscriber/client 연결이 idle 시 끊길 수 있다. VPC 환경의 장시간 TCP 연결에는 필수
 
-이번 케이스에서는 세 가지 문제가 동시에 존재했고, 디버깅 과정에서 하나씩 발견하여 모두 수정했다. Cloud Run + Redis + BullMQ 조합을 사용한다면, 이 세 가지를 체크리스트로 점검하는 것을 권장한다.
+이번 케이스에서는 세 가지 문제가 동시에 존재했고, 디버깅 과정에서 하나씩 발견하여 모두 수정했다. 결과적으로 delayed job 실패의 **근본 원인은 2번과 3번**이었지만, 1번도 VPC 환경에서의 안정성을 위해 반드시 적용해야 하는 설정이다. Cloud Run + Redis + BullMQ 조합을 사용한다면, 이 세 가지를 체크리스트로 점검하는 것을 권장한다.
 
 ---
 
