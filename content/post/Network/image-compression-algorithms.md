@@ -1,7 +1,7 @@
 ---
 title: "이미지 압축 알고리즘 비교: JPEG부터 AVIF까지, 클라이언트와 서버의 선택지"
 date: 2026-03-25T14:00:00+09:00
-draft: false
+draft: true
 categories:
 - Network
 ---
